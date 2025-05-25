@@ -28,9 +28,10 @@ router.post(
         const { id: clerkId, username, email_addresses, image_url, public_metadata } = data;
 
         const email = email_addresses?.[0]?.email_address;
-
+        console.log("coming here");
         switch (eventType) {
             case "user.created":
+                console.log("coming here user.created");
                 await User.create({
                     clerkId,
                     username: username,
