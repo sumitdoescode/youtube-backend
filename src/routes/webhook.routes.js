@@ -11,6 +11,7 @@ router.post(
     "/clerk",
     express.raw({ type: "application/json" }),
     asyncHandler(async (req, res) => {
+        console.log("webhook called");
         const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
         const payload = req.body;
         const headers = req.headers;
@@ -28,7 +29,6 @@ router.post(
         const { id: clerkId, username, email_addresses, image_url, public_metadata } = data;
 
         const email = email_addresses?.[0]?.email_address;
-        console.log("coming here");
         switch (eventType) {
             case "user.created":
                 console.log("coming here user.created");
