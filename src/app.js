@@ -27,7 +27,7 @@ import dashboardRouter from "./routes/dashboard.routes.js";
 
 // using routes
 app.use("/api/v1/webhook", webhookRouter);
-app.use(express.json({ limit: "20kb" }));
+app.use(express.json());
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/tweets", tweetRouter);
