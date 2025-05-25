@@ -6,7 +6,7 @@ const healthcheck = asyncHandler(async (req, res) => {
     if (!req) {
         throw new ApiError(400, "health status is poor");
     }
-    res.status(200, "health status is good");
+    res.status(200).json({ success: true, message: "health status is good" });
 });
 
 export { healthcheck };
