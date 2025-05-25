@@ -2,60 +2,76 @@ import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 import Like from "./like.model.js";
 import Comment from "./comment.model.js";
-import User from "./user.model.js";
+import Playlist from "./playlist.model.js";
+import WatchHistory from "./watchHistory.model.js";
 
 const videoSchema = new mongoose.Schema(
-  {
-    videoFile: {
-      url: { type: String },
-      publicId: { type: String },
+    {
+        video: {
+            url: { type: String, required: true },
+            publicId: { type: String },
+        },
+        thumbnail: {
+            url: { type: String, required: true },
+            publicId: { type: String },
+        },
+        title: {
+            type: String,
+            required: true,
+            maxlength: [100, "Title should be less than of 100 characters"],
+        },
+        description: {
+            type: String,
+            required: true,
+            maxlength: [2000, "Description should be less than of 2000 characters"],
+        },
+        duration: {
+            type: Number,
+            required: true,
+        },
+        views: {
+            type: Number,
+            default: 0,
+        },
+        visibility: {
+            type: String,
+            enum: ["public", "private"],
+            default: "public",
+        },
+        owner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
     },
-    thumbnail: {
-      url: { type: String },
-      publicId: { type: String },
-    },
-    title: {
-      type: String,
-      required: true,
-      length: [100, "Title should be less than of 100 characters"],
-    },
-    description: {
-      type: String,
-      required: true,
-      length: [2000, "Description should be less than of 2000 characters"],
-    },
-    duration: {
-      type: Number,
-      required: true,
-    },
-    views: {
-      type: Number,
-      default: 0,
-    },
-    isPublished: {
-      type: Boolean,
-      default: true,
-    },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-  },
-  { timestamps: true }
+    { timestamps: true }
 );
 
+// Video.find({owner: user._id}).sort({views: -1})
+videoSchema.index({ owner: 1 });
+videoSchema.index({ views: -1 });
+
 videoSchema.pre("remove", async function (next) {
-  // delete the likes related to video
-  await Like.deleteMany({ video: this._id });
+    const videoId = this._id;
 
-  // delete the comments related to video
-  await Comment.deleteMany({ video: this._id });
-  // also when a comment is going to delete, the likes data related to comments is also going to be deleted as written in comment model file
+    try {
+        // Delete all likes associated with the video
+        await Like.deleteMany({ video: videoId });
 
-  // deletes the video from watchHistory
+        // Delete all comments associated with the video
+        await Comment.deleteMany({ video: videoId });
+        // Comment model should already delete comment likes via its own middleware
 
-  // deletes the video from playlists
-  next();
+        // Delete all watch history entries for the video
+        await WatchHistory.deleteMany({ video: videoId });
+
+        // Remove video from all playlists
+        await Playlist.updateMany({ videos: videoId }, { $pull: { videos: videoId } });
+
+        next();
+    } catch (err) {
+        next(err);
+    }
 });
 
 // mongoose let's you add plugin and we will add "mongoose-aggregate-paginate-v2"

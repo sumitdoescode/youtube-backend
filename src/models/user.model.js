@@ -1,7 +1,4 @@
 import mongoose, { mongo } from "mongoose";
-import Video from "./video.model";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
     {
@@ -24,16 +21,9 @@ const userSchema = new mongoose.Schema(
             unique: true,
             trim: true,
         },
-        fullName: {
-            type: String,
-            required: true,
-            trim: true,
-            index: true,
-        },
-        avater: {
+        avatar: {
             url: {
                 type: String,
-                required: true,
             },
             publicId: {
                 type: String,
@@ -51,33 +41,6 @@ const userSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
-
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) {
-        return next();
-    }
-    this.password = await bcrypt.hash(this.password, 10);
-    return next();
-});
-
-userSchema.methods.isPasswordCorrect = async function (password) {
-    const isPasswordCorrect = await bcrypt.compare(password, this.password);
-    return isPasswordCorrect;
-};
-
-userSchema.method.generateAccessToken = async function () {
-    const accessToken = jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
-        expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    });
-    return accessToken;
-};
-
-userSchema.method.generateAccessToken = async function () {
-    const accessToken = jwt.sign({ _id: this._id }, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    });
-    return accessToken;
-};
 
 const User = mongoose.model("User", userSchema);
 

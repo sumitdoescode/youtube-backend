@@ -1,10 +1,13 @@
 import express from "express";
-import { registerUser, loginUser } from "../controllers/user.controller";
-import auth from "../controller/auth.controller";
+import { getCurrentUser, setUserAvatar, setUserCoverImage, getChannelDetails } from "../controllers/user.controller.js";
+import { requireAuth } from "@clerk/express";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", auth, loginUser);
+// prefix=  /api/v1/users
+router.get("/me", requireAuth(), getCurrentUser);
+router.patch("/me/avatar", requireAuth(), setUserAvatar);
+router.patch("/me/cover-image", requireAuth(), setUserCoverImage);
+router.get("/channel/:username", requireAuth(), getChannelDetails);
 
 export default router;

@@ -1,13 +1,13 @@
 import express from "express";
-import auth from "../middlewares/auth.middleware.js";
+import { requireAuth } from "@clerk/express";
 import { createTweet, getUserTweets, updateTweet, deleteTweet } from "../controllers/tweet.controller.js";
 
 const router = express.Router();
 
-router.post("/", auth, createTweet);
-router.get("/user/:userId", auth, getUserTweets);
-router.patch("/:tweetId", auth, updateTweet);
-// we'll check if the user which is sending the request is the owner of the tweet
-router.delete("/tweetId", auth, deleteTweet);
+// prefix = /api/v1/tweets
+router.post("/", requireAuth(), createTweet); // create a tweet
+router.get("/user/:userId", requireAuth(), getUserTweets); // get all tweets of a user
+router.patch("/:tweetId", requireAuth(), updateTweet); // update a tweet
+router.delete("/:tweetId", requireAuth(), deleteTweet); // delete a tweet
 
 export default router;

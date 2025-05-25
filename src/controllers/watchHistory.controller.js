@@ -1,111 +1,124 @@
-import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/ApiError";
-import Video from "../models/video.model";
-import WatchHistory from "../models/watchHistory.model";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+import Video from "../models/video.model.js";
+import WatchHistory from "../models/watchHistory.model.js";
+import User from "../models/user.model.js";
 import { isValidObjectId } from "mongoose";
+import getAuthenticatedUser from "../utils/authenticatedUser.js";
+
+// Check ownership helper
+const checkOwnership = asyncHandler(async (resource, userId) => {
+    if (!resource?.watchedBy) {
+        throw new ApiError(500, "Resource does not have an watchedBy field");
+    }
+    if (resource.watchedBy.toString() !== userId.toString()) {
+        throw new ApiError(403, "Access denied. You are not the owner of this");
+    }
+});
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = req.user;
+    const loggedInUser = await getAuthenticatedUser(req);
 
-  const watchHistoryAggregation = [
-    {
-      $match: {
-        watchedBy: user?._id,
-      },
-    },
-    {
-      $lookup: {
-        from: "videos",
-        localField: "video",
-        foreignField: "_id",
-        as: "video",
-        pipeline: [
-          {
-            $match: {
-              isPublished: true,
-            },
-          },
-          {
-            $lookup: {
-              from: "users",
-              localField: "owner",
-              foreignField: "_id",
-              as: "owner",
-            },
-          },
-          {
-            $unwind: "$owner",
-          },
-        ],
-      },
-    },
-    {
-      $unwind: "$video",
-    },
-    {
-      $sort: {
-        createdAt: -1,
-      },
-    },
-    {
-      $project: {
-        video: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          thumbnail: 1,
-          duration: 1,
-          views: 1,
-          owner: {
-            _id: 1,
-            username: 1,
-            fullName: 1,
-            avatar: 1,
-          },
+    const watchHistoryAggregation = [
+        {
+            $match: { watchedBy: loggedInUser._id },
         },
-        createdAt: 1,
-        updatedAt: 1,
-      },
-    },
-  ];
+        {
+            $lookup: {
+                from: "videos",
+                localField: "video",
+                foreignField: "_id",
+                as: "video",
+                pipeline: [
+                    { $match: { isPublished: true } },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                        },
+                    },
+                    { $unwind: "$owner" },
+                ],
+            },
+        },
+        { $unwind: "$video" },
+        { $sort: { createdAt: -1 } },
+        {
+            $project: {
+                video: {
+                    _id: 1,
+                    title: 1,
+                    description: 1,
+                    thumbnail: 1,
+                    duration: 1,
+                    views: 1,
+                    owner: {
+                        _id: 1,
+                        username: 1,
+                        avatar: 1,
+                    },
+                },
+                createdAt: 1,
+                updatedAt: 1,
+            },
+        },
+    ];
 
-  const { page = 1, limit = 10 } = req.query;
-  page = Math.max(1, parseInt(page)); // ensuring minimum value of page is 1
-  limit = Math.max(1, parseInt(limit)); // ensuring minimum value of limit is 1
+    let { page = 1, limit = 10 } = req.query;
+    page = Math.max(1, parseInt(page));
+    limit = Math.max(1, parseInt(limit));
 
-  const watchHistory = await WatchHistory.aggregatePaginate(WatchHistory.aggregate(watchHistoryAggregation), {
-    page: Number(page),
-    limit: Number(limit),
-  });
-  if (!watchHistory.docs.length) {
-    throw new ApiError(404, "No watch history found");
-  }
-  res.status(200).json({ success: true, message: "Watch history fetched successfully", watchHistory });
+    const watchHistory = await WatchHistory.aggregatePaginate(WatchHistory.aggregate(watchHistoryAggregation), { page, limit });
+
+    if (!watchHistory.docs.length) {
+        throw new ApiError(404, "No watch history found");
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Watch history fetched successfully",
+        watchHistory,
+    });
 });
 
 const deleteWatchHistory = asyncHandler(async (req, res) => {
-  const user = req.user;
-  const { watchHistoryId } = req.params;
-  if (!isValidObjectId(watchHistoryId)) {
-    throw new ApiError(400, "Invalid watch history id");
-  }
-  const watchHistory = await WatchHistory.findById(watchHistoryId);
-  if (!watchHistory) {
-    throw new ApiError(404, "Watch history not found");
-  }
+    const loggedInUser = await getAuthenticatedUser(req);
+    const { watchHistoryId } = req.params;
+    if (!isValidObjectId(watchHistoryId)) {
+        throw new ApiError(400, "Invalid watch history id");
+    }
+    const watchHistory = await WatchHistory.findById(watchHistoryId);
+    if (!watchHistory) {
+        throw new ApiError(404, "Watch history not found");
+    }
 
-  // Check if user is authorized to delete the watch history
-  if (watchHistory.watchedBy.toString() !== user._id.toString()) {
-    throw new ApiError(403, "Access denied. You cannot delete this watch history");
-  }
-  await WatchHistory.findByIdAndDelete(watchHistoryId);
-  res.status(200).json({ success: true, message: "Watch history deleted successfully" });
+    // Check if user is authorized to delete the watch history
+    await checkOwnership(watchHistory, loggedInUser._id);
+    await WatchHistory.findByIdAndDelete(watchHistoryId);
+    res.status(200).json({ success: true, message: "Watch history deleted successfully" });
 });
 
 const deleteAllWatchHistory = asyncHandler(async (req, res) => {
-  const user = req.user;
-  await WatchHistory.deleteMany({ watchedBy: user._id });
-  res.status(204).json({ success: true, message: "All watchHistory deleted successfully" });
+    const loggedInUser = await getAuthenticatedUser(req);
+    await WatchHistory.deleteMany({ watchedBy: loggedInUser._id });
+    res.status(204).json({ success: true, message: "All watchHistory deleted successfully" });
 });
 
-export { getWatchHistory, deleteWatchHistory, deleteAllWatchHistory };
+const toggleWatchHistory = asyncHandler(async (req, res) => {
+    const loggedInUser = await getAuthenticatedUser(req);
+    const newWatchHistoryStatus = loggedInUser.watchHistory === "enabled" ? "disabled" : "enabled";
+    const updatedUser = await User.findByIdAndUpdate(
+        loggedInUser._id,
+        {
+            $set: {
+                watchHistory: newWatchHistoryStatus,
+            },
+        },
+        { new: true }
+    );
+    res.status(200).json({ success: true, message: "Watch History updated successfully", user: updatedUser });
+});
+
+export { getWatchHistory, deleteWatchHistory, deleteAllWatchHistory, toggleWatchHistory };

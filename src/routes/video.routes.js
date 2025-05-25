@@ -1,23 +1,24 @@
 import express from "express";
-import { auth } from "../middlewares/auth.middleware.js";
+import { requireAuth } from "@clerk/express";
 import upload from "../middlewares/multer.middleware.js";
-import { publishAVideo, getAVideo, updateAVideo, deleteAVideo, toggleVideoStatus } from "../controllers/video.controller.js";
+import { uploadVideo, getAllVideos, getVideoById, updateVideo, deleteVideo, toggleVideoVisibility } from "../controllers/video.controller.js";
 
 const router = express.Router();
 
 // prefix = /api/v1/videos
 router.post(
-  "/",
-  auth,
-  upload.fields([
-    { name: "videoFile", maxCount: 1 },
-    { name: "thumbnail", maxCount: 1 },
-  ]),
-  publishAVideo
+    "/",
+    requireAuth(),
+    upload.fields([
+        { name: "video", maxCount: 1 },
+        { name: "thumbnail", maxCount: 1 },
+    ]),
+    uploadVideo // upload a video
 );
-router.get("/:videoId", auth, getAVideo);
-router.patch("/:videoId", auth, upload.single("thumbnail"), updateAVideo);
-router.delete("/:videoId", auth, deleteAVideo);
-router.patch("/toggleStatus/:videoId", auth, toggleVideoStatus);
+router.get("/", requireAuth(), getAllVideos); // get all videos (with optional query, sorting, filtering)
+router.get("/:videoId", requireAuth(), getVideoById); // get a video by ID
+router.patch("/:videoId", requireAuth(), upload.single("thumbnail"), updateVideo); // update a video
+router.delete("/:videoId", requireAuth(), deleteVideo); // delete a video
+router.patch("/:videoId/visibility", requireAuth(), toggleVideoVisibility); // toggle video visibility
 
 export default router;

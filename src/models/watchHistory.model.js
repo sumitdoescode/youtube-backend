@@ -2,21 +2,21 @@ import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const watchHistorySchema = new mongoose.Schema(
-  {
-    video: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Video",
+    {
+        video: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Video",
+        },
+        watchedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
     },
-    watchedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-  },
-  { timestamps: true }
+    { timestamps: true }
 );
 
 // this will enable us to use pagination
-watchHistorySchema.plugin("mongooseAggregatePaginate");
+watchHistorySchema.plugin(mongooseAggregatePaginate);
 
 const WatchHistory = mongoose.model("WatchHistory", watchHistorySchema);
 
