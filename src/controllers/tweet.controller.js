@@ -127,7 +127,8 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
     const loggedInUser = await getAuthenticatedUser(req);
     await checkOwnership(tweet, loggedInUser._id);
-    await tweet.remove();
+
+    await Tweet.findByIdAndDelete(tweetId);
     res.status(200).json({ success: true, message: "Tweet deleted successfully" });
 });
 

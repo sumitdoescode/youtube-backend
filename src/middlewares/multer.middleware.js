@@ -4,6 +4,7 @@ import fs from "fs";
 
 // Build absolute path from project root to public/temp
 const tempDir = path.resolve("public", "temp");
+// /your/full/project/path/public/temp
 
 // Ensure the folder exists
 if (!fs.existsSync(tempDir)) {

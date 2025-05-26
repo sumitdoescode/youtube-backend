@@ -81,6 +81,7 @@ const setUserCoverImage = asyncHandler(async (req, res) => {
         },
         { new: true }
     );
+    res.status(200).json({ success: true, message: "Cover image updated successfully" });
 });
 
 const getChannelDetails = asyncHandler(async (req, res) => {
