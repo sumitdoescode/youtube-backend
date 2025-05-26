@@ -25,6 +25,7 @@ router.post(
         try {
             event = wh.verify(payload, headers); // ✅ This is the proper way
         } catch (err) {
+            console.error("Webhook verification failed:", err); // <--- Add this
             return res.status(400).json({
                 success: false,
                 message: "Invalid webhook signature",
@@ -37,6 +38,12 @@ router.post(
         switch (eventType) {
             case "user.created":
                 console.log("webhook called for user.created");
+                console.log("Creating user in DB with:", {
+                    clerkId,
+                    username,
+                    email,
+                    avatar: { url: image_url || "" },
+                });
                 await User.create({
                     clerkId,
                     username: username,
