@@ -108,17 +108,31 @@ const deleteAllWatchHistory = asyncHandler(async (req, res) => {
 
 const toggleWatchHistory = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
-    const newWatchHistoryStatus = loggedInUser.watchHistory === "enabled" ? "disabled" : "enabled";
-    const updatedUser = await User.findByIdAndUpdate(
-        loggedInUser._id,
-        {
-            $set: {
-                watchHistory: newWatchHistoryStatus,
+    if (loggedInUser.watchHistory === "enabled") {
+        await User.findByIdAndUpdate(
+            loggedInUser._id,
+            {
+                $set: {
+                    watchHistory: "disabled",
+                },
             },
-        },
-        { new: true }
-    );
-    res.status(200).json({ success: true, message: "Watch History updated successfully", user: updatedUser });
+            { new: true }
+        );
+        return res.status(200).json({ success: true, message: "Watch History Disabled" });
+    }
+
+    if (loggedInUser.watchHistory === "disabled") {
+        await User.findByIdAndUpdate(
+            loggedInUser._id,
+            {
+                $set: {
+                    watchHistory: "enabled",
+                },
+            },
+            { new: true }
+        );
+        return res.status(200).json({ success: true, message: "Watch History Enabled" });
+    }
 });
 
 export { getWatchHistory, deleteWatchHistory, deleteAllWatchHistory, toggleWatchHistory };
