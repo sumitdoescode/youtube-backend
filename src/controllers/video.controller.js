@@ -216,9 +216,17 @@ const updateVideo = asyncHandler(async (req, res) => {
     await checkOwnership(video, loggedInUser._id);
 
     const { title, description } = req.body;
-    if (!title.trim() || !description.trim()) throw new ApiError(400, "Title and description are required");
-
     let thumbnail = req.file;
+    if (!title?.trim() && !description?.trim() && !thumbnail) {
+        throw new ApiError(400, "At least one field (title, description, thumbnail) must be provided for update");
+    }
+    if (title?.trim()) {
+        video.title = title.trim();
+    }
+    if (description?.trim()) {
+        video.description = description.trim();
+    }
+
     if (thumbnail) {
         const thumbnailCloudinary = await uploadOnCloudinary(thumbnail.path);
         if (!thumbnailCloudinary) throw new ApiError(500, "Couldn't upload thumbnail");
@@ -228,9 +236,6 @@ const updateVideo = asyncHandler(async (req, res) => {
         video.thumbnail.url = thumbnailCloudinary.url;
         video.thumbnail.publicId = thumbnailCloudinary.public_id;
     }
-
-    video.title = title;
-    video.description = description;
     await video.save();
 
     res.status(200).json({ success: true, message: "Video updated successfully", video });
@@ -248,6 +253,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     await checkOwnership(video, loggedInUser._id);
 
+    if (video?.thumbnail?.publicId) await deleteFromCloudinary(video.thumbnail.publicId);
     if (video?.video?.publicId) await deleteFromCloudinary(video.video.publicId);
 
     await video.deleteOne();
