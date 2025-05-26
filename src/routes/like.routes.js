@@ -6,13 +6,13 @@ import { likeOrUnlikeVideo, likeOrUnlikeComment, likeOrUnlikeTweet, getLikedVide
 const router = express.Router();
 
 // toggle video like by videoId
-router.patch("/videos/:videoId", requireAuth(), likeOrUnlikeVideo);
+router.post("/videos/:videoId", requireAuth(), likeOrUnlikeVideo);
 
 // toggle comment like by commentId
-router.patch("/comments/:commentId", requireAuth(), likeOrUnlikeComment);
+router.post("/comments/:commentId", requireAuth(), likeOrUnlikeComment);
 
 // toggle tweet like by tweetId
-router.patch("/tweets/:tweetId", requireAuth(), likeOrUnlikeTweet);
+router.post("/tweets/:tweetId", requireAuth(), likeOrUnlikeTweet);
 
 // get liked videos of logged-in user
 router.get("/videos", requireAuth(), getLikedVideos);
