@@ -2,6 +2,8 @@ import express from "express";
 import asyncHandler from "../utils/asyncHandler.js";
 import User from "../models/user.model.js";
 import { Webhook } from "svix";
+import { config } from "dotenv";
+config();
 
 const router = express.Router();
 
