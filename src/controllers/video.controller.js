@@ -5,7 +5,7 @@ import Like from "../models/like.model.js";
 import Playlist from "../models/playlist.model.js";
 import Video from "../models/video.model.js";
 import WatchHistory from "../models/watchHistory.model.js";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import fs from "fs";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
