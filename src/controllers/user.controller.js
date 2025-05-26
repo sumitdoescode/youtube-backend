@@ -31,7 +31,7 @@ const setUserAvatar = asyncHandler(async (req, res) => {
     // is publicId is present then delete the old avatar from the cloudinary
     if (loggedInUser.avatar?.publicId) {
         // delete the old avatar from the cloudinary
-        await deleteFromCloudinary(loggedInUser.avatar.publicId);
+        await deleteFromCloudinary(loggedInUser.avatar.publicId, "image");
     }
 
     // save the avatar in the database
@@ -65,7 +65,7 @@ const setUserCoverImage = asyncHandler(async (req, res) => {
 
     if (loggedInUser.coverImage?.publicId) {
         // delete the old cover image from the cloudinary
-        await deleteFromCloudinary(loggedInUser.coverImage.publicId);
+        await deleteFromCloudinary(loggedInUser.coverImage.publicId, "image");
     }
 
     // save the cover image in the database

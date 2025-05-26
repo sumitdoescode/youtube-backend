@@ -231,7 +231,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         const thumbnailCloudinary = await uploadOnCloudinary(thumbnail.path);
         if (!thumbnailCloudinary) throw new ApiError(500, "Couldn't upload thumbnail");
 
-        await deleteFromCloudinary(video.thumbnail.publicId);
+        await deleteFromCloudinary(video.thumbnail.publicId, "image");
 
         video.thumbnail.url = thumbnailCloudinary.url;
         video.thumbnail.publicId = thumbnailCloudinary.public_id;
@@ -254,13 +254,13 @@ const deleteVideo = asyncHandler(async (req, res) => {
     await checkOwnership(video, loggedInUser._id);
 
     if (video?.thumbnail?.publicId) {
-        const deleteResponse = await deleteFromCloudinary(video.thumbnail.publicId);
+        const deleteResponse = await deleteFromCloudinary(video.thumbnail.publicId, "image");
         if (!deleteResponse) {
             throw new ApiError(500, "Failed to delete thumbnail from Cloudinary");
         }
     }
     if (video?.video?.publicId) {
-        const deleteResponse = await deleteFromCloudinary(video.video.publicId);
+        const deleteResponse = await deleteFromCloudinary(video.video.publicId, "video");
         if (!deleteResponse) {
             throw new ApiError(500, "Failed to delete video from Cloudinary");
         }
