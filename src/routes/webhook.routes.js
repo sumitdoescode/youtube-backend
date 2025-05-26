@@ -25,7 +25,10 @@ router.post(
         try {
             event = wh.verify(payload, headers); // ✅ This is the proper way
         } catch (err) {
-            return res.status(400).send("Invalid signature");
+            return res.status(400).json({
+                success: false,
+                message: "Invalid webhook signature",
+            });
         }
         const { type: eventType, data } = event;
         const { id: clerkId, username, email_addresses, image_url, public_metadata } = data;
