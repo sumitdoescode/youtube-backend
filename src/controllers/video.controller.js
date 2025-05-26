@@ -257,6 +257,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
         const deleteResponse = await deleteFromCloudinary(video.thumbnail.publicId);
         if (!deleteResponse) {
             throw new ApiError(500, "Failed to delete thumbnail from Cloudinary");
+        }
     }
     if (video?.video?.publicId) {
         const deleteResponse = await deleteFromCloudinary(video.video.publicId);
