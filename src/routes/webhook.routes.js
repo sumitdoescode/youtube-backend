@@ -31,7 +31,7 @@ router.post(
         const email = email_addresses?.[0]?.email_address;
         switch (eventType) {
             case "user.created":
-                console.log("coming here user.created");
+                console.log("webhook called for user.created");
                 await User.create({
                     clerkId,
                     username: username,
@@ -43,6 +43,7 @@ router.post(
                 break;
 
             case "user.updated":
+                console.log("webhook called for user.updated");
                 await User.findOneAndUpdate(
                     { clerkId },
                     {
@@ -57,6 +58,7 @@ router.post(
                 break;
 
             case "user.deleted":
+                console.log("webhook called for user.deleted");
                 await User.findOneAndDelete({ clerkId });
                 break;
 
