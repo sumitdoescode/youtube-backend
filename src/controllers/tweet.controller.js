@@ -4,6 +4,7 @@ import Tweet from "../models/tweet.model.js";
 import User from "../models/user.model.js";
 import { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
+import mongoose from "mongoose";
 
 // Check ownership helper
 const checkOwnership = asyncHandler(async (resource, userId) => {
