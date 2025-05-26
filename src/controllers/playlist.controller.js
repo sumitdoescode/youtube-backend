@@ -89,7 +89,7 @@ const toggleVideoInPlaylist = asyncHandler(async (req, res) => {
 
     const loggedInUser = await getAuthenticatedUser(req);
     const video = await Video.findById(videoId);
-    if (!video || !video.isPublished) throw new ApiError(404, "Video not found");
+    if (!video || video.visibility === "private") throw new ApiError(404, "Video not found");
 
     await checkOwnership(playlist, loggedInUser._id);
 
