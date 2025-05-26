@@ -144,13 +144,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 
     const paginatedLikedVideos = await Like.aggregatePaginate(Like.aggregate(aggregationPipeline), { page: page, limit: limit });
 
-    // Count total liked Videos
-    const likedVideosCount = await Like.countDocuments(aggregationPipeline[0].$match);
-
     res.status(200).json({
         success: true,
         message: "Liked Videos Successfully fetched",
-        likedVideosCount,
         likedVideos: paginatedLikedVideos,
     });
 });
@@ -219,13 +215,7 @@ const getLikedTweets = asyncHandler(async (req, res) => {
         limit: parseInt(limit),
     });
 
-    // count total number of liked tweets
-    const likedTweetsCount = await Like.countDocuments({
-        likedBy: loggedInUser._id,
-        tweet: { $exists: true },
-    });
-
-    res.status(200).json({ success: true, message: "Liked Tweets Successfully fetched", likedTweetsCount, likedTweets: paginatedLikedTweets });
+    res.status(200).json({ success: true, message: "Liked Tweets Successfully fetched", likedTweets: paginatedLikedTweets });
 });
 
 // Get liked comments of logged-in user
@@ -292,13 +282,7 @@ const getLikedComments = asyncHandler(async (req, res) => {
         limit: Number(limit),
     });
 
-    // count total number of liked comments
-    const totalLikedCommentsCount = await Like.countDocuments({
-        likedBy: loggedInUser._id,
-        comment: { $exists: true },
-    });
-
-    res.status(200).json({ success: true, message: "Liked Comments Successfully fetched", totalLikedCommentsCount, likedComments: paginatedLikedComments });
+    res.status(200).json({ success: true, message: "Liked Comments Successfully fetched", likedComments: paginatedLikedComments });
 });
 
 export { likeOrUnlikeVideo, likeOrUnlikeComment, likeOrUnlikeTweet, getLikedVideos, getLikedTweets, getLikedComments };
