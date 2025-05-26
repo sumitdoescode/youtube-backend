@@ -73,7 +73,7 @@ const deletePlaylist = asyncHandler(async (req, res) => {
 
     await checkOwnership(playlist, loggedInUser._id);
 
-    await playlist.remove();
+    await Playlist.findByIdAndDelete(playlist._id);
     res.status(200).json({ success: true, message: "Playlist deleted successfully" });
 });
 
