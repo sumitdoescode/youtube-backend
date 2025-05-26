@@ -131,7 +131,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
                 foreignField: "_id",
                 as: "videos",
                 pipeline: [
-                    { $match: { isPublished: true } },
+                    { $match: { visibility: "public" } },
                     {
                         $lookup: {
                             from: "users",
