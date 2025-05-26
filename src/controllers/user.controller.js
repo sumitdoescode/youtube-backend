@@ -112,21 +112,12 @@ const getChannelDetails = asyncHandler(async (req, res) => {
             },
         },
         {
-            $addField: {
-                $first: "$subscribers",
-            },
-        },
-        {
             $addFields: {
-                subscribersCount: {
-                    $size: "$subscribers",
-                },
-                subscribedToCount: {
-                    $size: "$subscribedTo",
-                },
+                subscribersCount: { $size: "$subscribers" },
+                subscribedToCount: { $size: "$subscribedTo" },
                 isSubscribed: {
                     $cond: {
-                        if: { $in: [loggedInUser._id, "$subscibers.subscriber"] },
+                        if: { $in: [loggedInUser._id, "$subscribers.subscriber"] },
                         then: true,
                         else: false,
                     },
@@ -137,12 +128,8 @@ const getChannelDetails = asyncHandler(async (req, res) => {
             $project: {
                 username: 1,
                 email: 1,
-                avatar: {
-                    url: 1,
-                },
-                coverImage: {
-                    url: 1,
-                },
+                avatar: { url: 1 },
+                coverImage: { url: 1 },
                 subscribersCount: 1,
                 subscribedToCount: 1,
                 isSubscribed: 1,
@@ -150,6 +137,7 @@ const getChannelDetails = asyncHandler(async (req, res) => {
             },
         },
     ]);
+
     if (!channelDetails?.length) {
         throw new ApiError(404, "User not found");
     }
