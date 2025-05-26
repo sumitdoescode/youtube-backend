@@ -151,7 +151,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid video id");
 
     const videoData = await Video.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
+        { $match: { _id: new mongoose.Types.ObjectId(videoId), visibility: "public" } },
         {
             $lookup: {
                 from: "likes",
