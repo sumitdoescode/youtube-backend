@@ -142,7 +142,7 @@ const deleteComment = asyncHandler(async (req, res) => {
 
     await checkOwnership(comment, loggedInUser._id);
 
-    await comment.remove();
+    await Comment.findByIdAndDelete(commentId);
 
     res.status(200).json({
         success: true,
