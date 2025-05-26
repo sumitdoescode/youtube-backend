@@ -141,22 +141,35 @@ const getPlaylistById = asyncHandler(async (req, res) => {
                         },
                     },
                     { $unwind: "$owner" },
+                    {
+                        $project: {
+                            _id: 1,
+                            thumbnail: 1,
+                            title: 1,
+                            description: 1,
+                            duration: 1,
+                            views: 1,
+                            visibility: 1,
+                            createdAt: 1,
+                            updatedAt: 1,
+                            owner: {
+                                username: 1,
+                                avatar: 1,
+                            },
+                        },
+                    },
                 ],
             },
         },
         {
             $project: {
                 _id: 1,
-                thumbnail: 1,
                 title: 1,
                 description: 1,
-                duration: 1,
-                views: 1,
                 visibility: 1,
-                owner: {
-                    username: 1,
-                    avatar: 1,
-                },
+                videos: 1,
+                createdAt: 1,
+                updatedAt: 1,
             },
         },
     ];
