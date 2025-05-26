@@ -13,7 +13,6 @@ router.post(
     "/clerk",
     express.raw({ type: "application/json" }),
     asyncHandler(async (req, res) => {
-        console.log("webhook called");
         const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
         const payload = req.body;
         const headers = req.headers;
@@ -25,7 +24,6 @@ router.post(
         try {
             event = wh.verify(payload, headers); // ✅ This is the proper way
         } catch (err) {
-            console.error("Webhook verification failed:", err); // <--- Add this
             return res.status(400).json({
                 success: false,
                 message: "Invalid webhook signature",
@@ -37,13 +35,6 @@ router.post(
         const email = email_addresses?.[0]?.email_address;
         switch (eventType) {
             case "user.created":
-                console.log("webhook called for user.created");
-                console.log("Creating user in DB with:", {
-                    clerkId,
-                    username,
-                    email,
-                    avatar: { url: image_url || "" },
-                });
                 await User.create({
                     clerkId,
                     username: username,
@@ -55,7 +46,6 @@ router.post(
                 break;
 
             case "user.updated":
-                console.log("webhook called for user.updated");
                 await User.findOneAndUpdate(
                     { clerkId },
                     {
@@ -70,7 +60,6 @@ router.post(
                 break;
 
             case "user.deleted":
-                console.log("webhook called for user.deleted");
                 await User.findOneAndDelete({ clerkId });
                 break;
 
