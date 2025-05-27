@@ -72,7 +72,7 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
 
     // Aggregation pipeline to get subscribers and their details
     const subscribersAggregation = [
-        { $match: { channel: mongoose.Types.ObjectId(channel._id) } },
+        { $match: { channel: new mongoose.Types.ObjectId(channel._id) } },
         {
             $lookup: {
                 from: "users",
@@ -93,7 +93,7 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
                             subscribersCount: { $size: "$subscriberSubscribers" },
                             isSubscribed: {
                                 $cond: {
-                                    if: { $in: [mongoose.Types.ObjectId(loggedInUser._id), "$subscriberSubscribers.subscriber"] },
+                                    if: { $in: [new mongoose.Types.ObjectId(loggedInUser._id), "$subscriberSubscribers.subscriber"] },
                                     then: true,
                                     else: false,
                                 },
@@ -146,7 +146,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     const subscribedToAggregation = [
         {
             $match: {
-                subscriber: mongoose.Types.ObjectId(channel._id),
+                subscriber: new mongoose.Types.ObjectId(channel._id),
             },
         },
         {
@@ -169,7 +169,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
                             subscribersCount: { $size: "$subscribers" },
                             isSubscribed: {
                                 $cond: {
-                                    if: { $in: [mongoose.Types.ObjectId(loggedInUser._id), "$subscribers.subscriber"] },
+                                    if: { $in: [new mongoose.Types.ObjectId(loggedInUser._id), "$subscribers.subscriber"] },
                                     then: true,
                                     else: false,
                                 },
