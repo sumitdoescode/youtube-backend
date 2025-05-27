@@ -9,6 +9,7 @@ import mongoose, { isValidObjectId } from "mongoose";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import fs from "fs";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
+import { match } from "assert";
 
 // Check if the user is the owner of the resource
 const checkOwnership = asyncHandler(async (resource, userId) => {
@@ -59,7 +60,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
     }
 
     const aggregate = Video.aggregate([
-        { $match: matchStage },
+        {
+            $match: {
+                title: matchStage.title || { $exists: true },
+                visibility: "public",
+                owner: new mongoose.Types.ObjectId(matchStage.owner) || { $exists: true },
+            },
+        },
         {
             $lookup: {
                 from: "users",
