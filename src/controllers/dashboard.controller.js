@@ -16,7 +16,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
     let totalLikes = Video.aggregate([
         {
             $match: {
-                owner: mongoose.Types.ObjectId(loggedInUser._id),
+                owner: new mongoose.Types.ObjectId(loggedInUser._id),
             },
         },
         {
@@ -47,7 +47,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     const videos = await Video.aggregate([
         {
             $match: {
-                owner: loggedInUser._id,
+                owner: new mongoose.Types.ObjectId(loggedInUser._id),
             },
         },
         {
