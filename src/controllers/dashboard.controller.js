@@ -141,7 +141,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     ];
 
     // pagination parameters
-    let { page = 1, limit = 1 } = req.query;
+    let { page = 1, limit = 10 } = req.query;
     page = Math.max(1, parseInt(page));
     limit = Math.max(1, parseInt(limit));
 
