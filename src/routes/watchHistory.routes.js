@@ -12,10 +12,10 @@ router.patch("/toggle", requireAuth(), toggleWatchHistory);
 // Get all watch history entries of logged-in user
 router.get("/", requireAuth(), getWatchHistory);
 
-// Delete a specific watch history entry by ID
-router.delete("/:watchHistoryId", requireAuth(), deleteWatchHistory);
-
 // Delete all watch history entries of logged-in user
 router.delete("/all", requireAuth(), deleteAllWatchHistory);
+
+// Delete a specific watch history entry by ID
+router.delete("/:watchHistoryId", requireAuth(), deleteWatchHistory);
 
 export default router;
