@@ -103,7 +103,7 @@ const deleteWatchHistory = asyncHandler(async (req, res) => {
 const deleteAllWatchHistory = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
     await WatchHistory.deleteMany({ watchedBy: loggedInUser._id });
-    res.status(204).json({ success: true, message: "All watchHistory deleted successfully" });
+    res.status(200).json({ success: true, message: "All watchHistory deleted successfully" });
 });
 
 const toggleWatchHistory = asyncHandler(async (req, res) => {

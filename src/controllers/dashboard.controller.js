@@ -8,16 +8,21 @@ import mongoose from "mongoose";
 
 const getChannelStats = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
+
+    // Count total subscribers of the channel (i.e., how many users subscribed to this user's channel)
     const totalSubscribersCount = await Subscription.countDocuments({
         channel: loggedInUser._id,
     });
 
-    // sum total of all video likes of a channel
-    let totalLikes = Video.aggregate([
+    // Count how many channels this user is subscribed to
+    const totalSubscribedToCount = await Subscription.countDocuments({
+        subscriber: loggedInUser._id,
+    });
+
+    // Sum of likes on this user's videos
+    const totalLikesAgg = await Video.aggregate([
         {
-            $match: {
-                owner: new mongoose.Types.ObjectId(loggedInUser._id),
-            },
+            $match: { owner: new mongoose.Types.ObjectId(loggedInUser._id) },
         },
         {
             $lookup: {
@@ -27,24 +32,68 @@ const getChannelStats = asyncHandler(async (req, res) => {
                 as: "likes",
             },
         },
+        {
+            $project: {
+                likesCount: { $size: "$likes" },
+            },
+        },
+        {
+            $group: {
+                _id: null,
+                totalLikes: { $sum: "$likesCount" },
+            },
+        },
     ]);
 
-    // sum total of all video views of a channel
-    let totalViewsCount = 0;
-    const videos = await Video.find({
-        owner: loggedInUser._id,
-    }).select("views");
-    videos.forEach((video) => {
-        totalViewsCount += video.views;
-    });
+    const totalLikes = totalLikesAgg?.[0]?.totalLikes || 0;
 
-    res.status(200).json({ success: true, message: "Channel Stats fetched Successfully", totalSubscribersCount, totalLikes, totalViewsCount });
+    // Total comments on this user's videos
+    const totalCommentsAgg = await Video.aggregate([
+        {
+            $match: { owner: new mongoose.Types.ObjectId(loggedInUser._id) },
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "video",
+                as: "comments",
+            },
+        },
+        {
+            $project: {
+                commentsCount: { $size: "$comments" },
+            },
+        },
+        {
+            $group: {
+                _id: null,
+                totalComments: { $sum: "$commentsCount" },
+            },
+        },
+    ]);
+
+    const totalCommentsCount = totalCommentsAgg?.[0]?.totalComments || 0;
+
+    // Sum total views of this user's videos
+    const videos = await Video.find({ owner: loggedInUser._id }).select("views");
+    const totalViewsCount = videos.reduce((sum, video) => sum + (video.views || 0), 0);
+
+    res.status(200).json({
+        success: true,
+        message: "Channel stats fetched successfully",
+        totalSubscribersCount,
+        totalSubscribedToCount,
+        totalLikes,
+        totalCommentsCount,
+        totalViewsCount,
+    });
 });
 
 // dashboard controller here we will show all the videos (even if they are private)
 const getChannelVideos = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
-    const videos = await Video.aggregate([
+    const pipeline = await Video.aggregate([
         {
             $match: {
                 owner: new mongoose.Types.ObjectId(loggedInUser._id),
@@ -96,7 +145,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     page = Math.max(1, parseInt(page));
     limit = Math.max(1, parseInt(limit));
 
-    const paginatedVideos = await Video.aggregatePaginate(videos, { page: page, limit: limit });
+    const paginatedVideos = await Video.aggregatePaginate(Video.aggregate(pipeline), { page: page, limit: limit });
     res.status(200).json({ success: true, message: "videos generated successfully", videos: paginatedVideos });
 });
 
