@@ -72,10 +72,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
     const watchHistory = await WatchHistory.aggregatePaginate(WatchHistory.aggregate(watchHistoryAggregation), { page, limit });
 
-    if (!watchHistory.docs.length) {
-        throw new ApiError(404, "No watch history found");
-    }
-
     res.status(200).json({
         success: true,
         message: "Watch history fetched successfully",
