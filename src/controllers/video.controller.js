@@ -33,16 +33,17 @@ const getAllVideos = asyncHandler(async (req, res) => {
     if (userId && !isValidObjectId(userId)) {
         throw new ApiError(400, "Invalid userId");
     }
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
 
     const matchStage = {};
     if (query?.trim()) {
         matchStage.title = { $regex: query, $options: "i" };
     }
+
     if (userId) {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new ApiError(404, "User not found with provided userId");
+        }
         matchStage.owner = userId;
     }
 

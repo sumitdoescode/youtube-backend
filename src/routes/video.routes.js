@@ -6,6 +6,8 @@ import { uploadVideo, getAllVideos, getVideoById, updateVideo, deleteVideo, togg
 const router = express.Router();
 
 // prefix = /api/v1/videos
+router.get("/", requireAuth(), getAllVideos); // get all videos (with optional query, sorting, filtering)
+
 router.post(
     "/",
     requireAuth(),
@@ -15,7 +17,6 @@ router.post(
     ]),
     uploadVideo // upload a video
 );
-router.get("/", requireAuth(), getAllVideos); // get all videos (with optional query, sorting, filtering)
 router.get("/:videoId", requireAuth(), getVideoById); // get a video by ID
 router.patch("/:videoId", requireAuth(), upload.single("thumbnail"), updateVideo); // update a video
 router.delete("/:videoId", requireAuth(), deleteVideo); // delete a video
