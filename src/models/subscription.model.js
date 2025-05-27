@@ -14,6 +14,9 @@ const subscriptionSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// Enable aggregate pagination
+subscriptionSchema.plugin(mongooseAggregatePaginate);
+
 const Subscription = mongoose.model("Subscription", subscriptionSchema);
 
 export default Subscription;
