@@ -199,7 +199,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!videoData.length) throw new ApiError(404, "Video not found");
 
     await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
-    if (loggedInUser.WatchHistory === "enabled") {
+    if (loggedInUser.watchHistory === "enabled") {
         await WatchHistory.findOneAndUpdate({ video: videoId, watchedBy: loggedInUser._id }, {}, { upsert: true, new: true, setDefaultsOnInsert: true });
     }
 
