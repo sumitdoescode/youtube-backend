@@ -93,7 +93,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
 // dashboard controller here we will show all the videos (even if they are private)
 const getChannelVideos = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
-    const pipeline = await Video.aggregate([
+    const pipeline = [
         {
             $match: {
                 owner: new mongoose.Types.ObjectId(loggedInUser._id),
@@ -138,7 +138,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
                 commentsCount: 1,
             },
         },
-    ]);
+    ];
 
     // pagination parameters
     let { page = 1, limit = 1 } = req.query;
