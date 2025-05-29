@@ -9,7 +9,7 @@ import getAuthenticatedUser from "../utils/authenticatedUser.js";
 const getCurrentUser = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
 
-    res.status(200).json({ success: true, message: "Current User Fetched", user: loggedInUser });
+    res.status(200).json({ success: true, message: "Current User Fetched", data: { user: loggedInUser } });
 });
 
 const setUserAvatar = asyncHandler(async (req, res) => {
@@ -142,7 +142,7 @@ const getChannelDetails = asyncHandler(async (req, res) => {
     if (!channelDetails?.length) {
         throw new ApiError(404, "User not found");
     }
-    res.status(200).json({ success: true, message: "Channel details fetched successfully", channelDetails: channelDetails[0] });
+    res.status(200).json({ success: true, message: "Channel details fetched successfully", data: { channelDetails: channelDetails[0] } });
 });
 
 export { getCurrentUser, setUserAvatar, setUserCoverImage, getChannelDetails };

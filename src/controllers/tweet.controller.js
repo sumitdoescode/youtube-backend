@@ -5,16 +5,9 @@ import User from "../models/user.model.js";
 import { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import mongoose from "mongoose";
-
-// Check ownership helper
-const checkOwnership = asyncHandler(async (resource, userId) => {
-    if (!resource?.owner) {
-        throw new ApiError(500, "Resource does not have an owner field");
-    }
-    if (resource.owner.toString() !== userId.toString()) {
-        throw new ApiError(403, "Access denied. You are not the owner of this");
-    }
-});
+import { parsePagination } from "../utils/parsePagination.js";
+import { validateTweetExists, validateUserExists } from "../utils/validateExists.js";
+import { checkOwnership } from "../utils/checkOwnership.js";
 
 const createTweet = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
@@ -27,15 +20,14 @@ const createTweet = asyncHandler(async (req, res) => {
         owner: loggedInUser._id,
     });
     // 201 = status code for successful creation of tweet
-    res.status(201).json({ success: true, message: "Tweet created successfully", tweet: tweet });
+    res.status(201).json({ success: true, message: "Tweet created successfully", data: { tweet } });
 });
 
 const getUserTweets = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10 } = req.query;
     const loggedInUser = await getAuthenticatedUser(req);
 
     const { userId } = req.params;
-    if (!isValidObjectId(userId)) throw new ApiError(400, "Invalid user ID provided by client");
+    const user = await validateUserExists(userId);
 
     const tweetPipeline = [
         { $match: { owner: new mongoose.Types.ObjectId(userId) } },
@@ -76,29 +68,25 @@ const getUserTweets = asyncHandler(async (req, res) => {
         },
     ];
 
-    const tweets = await Tweet.aggregatePaginate(Tweet.aggregate(tweetPipeline), { page: Number(page), limit: Number(limit) });
+    const { page, limit } = parsePagination(req.query);
 
-    if (!tweets.docs.length) throw new ApiError(404, "No tweets found for this user");
+    const tweets = await Tweet.aggregatePaginate(Tweet.aggregate(tweetPipeline), { page, limit });
 
     res.status(200).json({
         success: true,
         message: "Tweets fetched successfully",
-        tweets,
+        data: {
+            tweets,
+        },
     });
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
-    const { tweetId } = req.params;
     const { content } = req.body;
-    if (!isValidObjectId(tweetId)) {
-        throw new ApiError(400, "Invalid tweet id");
-    }
+    const { tweetId } = req.params;
+    const tweet = await validateTweetExists(tweetId);
     if (!content?.trim()) {
         throw new ApiError(400, "Content is required");
-    }
-    const tweet = await Tweet.findById(tweetId);
-    if (!tweet) {
-        throw new ApiError(404, "Tweet not found");
     }
     const loggedInUser = await getAuthenticatedUser(req);
 
@@ -113,18 +101,18 @@ const updateTweet = asyncHandler(async (req, res) => {
         },
         { new: true }
     );
-    res.status(200).json({ success: true, message: "Tweet updated successfully", tweet: newTweet });
+    res.status(200).json({
+        success: true,
+        message: "Tweet updated successfully",
+        data: {
+            tweet: newTweet,
+        },
+    });
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
-    if (!isValidObjectId(tweetId)) {
-        throw new ApiError(400, "Invalid tweet id");
-    }
-    const tweet = await Tweet.findById(tweetId);
-    if (!tweet) {
-        throw new ApiError(404, "Tweet not found");
-    }
+    const tweet = await validateTweetExists(tweetId);
 
     const loggedInUser = await getAuthenticatedUser(req);
     await checkOwnership(tweet, loggedInUser._id);

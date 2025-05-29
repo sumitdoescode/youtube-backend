@@ -5,16 +5,9 @@ import WatchHistory from "../models/watchHistory.model.js";
 import User from "../models/user.model.js";
 import { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
-
-// Check ownership helper
-const checkOwnership = asyncHandler(async (resource, userId) => {
-    if (!resource?.watchedBy) {
-        throw new ApiError(500, "Resource does not have an watchedBy field");
-    }
-    if (resource.watchedBy.toString() !== userId.toString()) {
-        throw new ApiError(403, "Access denied. You are not the owner of this");
-    }
-});
+import { parsePagination } from "../utils/parsePagination.js";
+import { validateWatchHistoryExists } from "../utils/validateExists.js";
+import { checkOwnershipForWatchHistory } from "../utils/checkOwnership.js";
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
@@ -66,32 +59,26 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         },
     ];
 
-    let { page = 1, limit = 10 } = req.query;
-    page = Math.max(1, parseInt(page));
-    limit = Math.max(1, parseInt(limit));
+    const { page, limit } = parsePagination(req.query);
 
     const watchHistory = await WatchHistory.aggregatePaginate(WatchHistory.aggregate(watchHistoryAggregation), { page, limit });
 
     res.status(200).json({
         success: true,
         message: "Watch history fetched successfully",
-        watchHistory,
+        data: {
+            watchHistory,
+        },
     });
 });
 
 const deleteWatchHistory = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
     const { watchHistoryId } = req.params;
-    if (!isValidObjectId(watchHistoryId)) {
-        throw new ApiError(400, "Invalid watch history id");
-    }
-    const watchHistory = await WatchHistory.findById(watchHistoryId);
-    if (!watchHistory) {
-        throw new ApiError(404, "Watch history not found");
-    }
+    const watchHistory = await validateWatchHistoryExists(watchHistoryId);
 
     // Check if user is authorized to delete the watch history
-    await checkOwnership(watchHistory, loggedInUser._id);
+    await checkOwnershipForWatchHistory(watchHistory, loggedInUser._id);
     await WatchHistory.findByIdAndDelete(watchHistoryId);
     res.status(200).json({ success: true, message: "Watch history deleted successfully" });
 });

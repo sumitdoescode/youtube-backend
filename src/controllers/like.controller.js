@@ -7,28 +7,24 @@ import Comment from "../models/comment.model.js";
 import Tweet from "../models/tweet.model.js";
 import User from "../models/user.model.js";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
+import { parsePagination } from "../utils/parsePagination.js";
+import { validateVideoExists, validateCommentExists, validateTweetExists } from "../utils/validateExists.js";
 
 // toggle video like
 const likeOrUnlikeVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
 
-    if (!isValidObjectId(videoId)) {
-        throw new ApiError(400, "Invalid video id");
-    }
-
-    const video = await Video.findById(videoId);
-    if (!video) {
-        throw new ApiError(404, "Video not found");
-    }
+    const video = await validateVideoExists(videoId);
 
     const loggedInUser = await getAuthenticatedUser(req);
 
-    const liked = await Like.findOne({ video: videoId, likedBy: loggedInUser._id });
+    const liked = await Like.findOneAndDelete({ video: videoId, likedBy: loggedInUser._id });
 
     if (liked) {
-        await Like.findByIdAndDelete(liked._id);
+        // Like mil gaya toh delete ho gaya, respond karo
         res.status(200).json({ success: true, message: "Removed from Liked Videos" });
     } else {
+        // Like nahi mila, ab create karo
         await Like.create({ video: videoId, likedBy: loggedInUser._id });
         res.status(200).json({ success: true, message: "Video Liked Successfully" });
     }
@@ -37,20 +33,14 @@ const likeOrUnlikeVideo = asyncHandler(async (req, res) => {
 // toggle comment Like
 const likeOrUnlikeComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
-    if (!isValidObjectId(commentId)) {
-        throw new ApiError(400, "Invalid comment id");
-    }
-    const comment = await Comment.findById(commentId);
-    if (!comment) {
-        throw new ApiError(404, "Comment not found");
-    }
+    const comment = await validateCommentExists(commentId);
     const loggedInUser = await getAuthenticatedUser(req);
-    const liked = await Like.findOne({ comment: commentId, likedBy: loggedInUser?._id });
+    const liked = await Like.findOneAndDelete({ comment: comment._id, likedBy: loggedInUser._id });
     if (liked) {
-        await Like.findByIdAndDelete(liked?._id);
+        // if liked, delete the like
         res.status(200).json({ success: true, message: "Removed from liked comments" });
     } else {
-        await Like.create({ comment: commentId, likedBy: loggedInUser?._id });
+        await Like.create({ comment: commentId, likedBy: loggedInUser._id });
         res.status(200).json({ success: true, message: "Comment liked successfully" });
     }
 });
@@ -58,21 +48,15 @@ const likeOrUnlikeComment = asyncHandler(async (req, res) => {
 // toggle tweet like
 const likeOrUnlikeTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
-    if (!isValidObjectId(tweetId)) {
-        throw new ApiError(400, "Invalid tweet id");
-    }
-    const tweet = await Tweet.findById(tweetId);
-    if (!tweet) {
-        throw new ApiError(404, "Tweet not found");
-    }
+    const tweet = await validateTweetExists(tweetId);
     const loggedInUser = await getAuthenticatedUser(req);
-    const liked = await Like.findOne({ tweet: tweetId, likedBy: loggedInUser?._id });
+    const liked = await Like.findOneAndDelete({ tweet: tweetId, likedBy: loggedInUser._id });
 
     if (liked) {
-        await Like.findByIdAndDelete(liked?._id);
+        // if liked, delete the like
         res.status(200).json({ success: true, message: "Removed from liked tweets" });
     } else {
-        await Like.create({ tweet: tweetId, likedBy: loggedInUser?._id });
+        await Like.create({ tweet: tweetId, likedBy: loggedInUser._id });
         res.status(200).json({ success: true, message: "Tweet liked successfully" });
     }
 });
@@ -115,7 +99,10 @@ const getLikedVideos = asyncHandler(async (req, res) => {
             },
         },
         {
-            $unwind: "$video",
+            $unwind: {
+                path: "$video",
+                preserveNullAndEmptyArrays: false,
+            },
         },
         {
             $sort: { createdAt: -1 },
@@ -138,16 +125,14 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     ];
 
     // Pagination params
-    let { page = 1, limit = 10 } = req.query;
-    page = Math.max(1, parseInt(page));
-    limit = Math.max(1, parseInt(limit));
+    const { page, limit } = parsePagination(req.query);
 
-    const paginatedLikedVideos = await Like.aggregatePaginate(Like.aggregate(aggregationPipeline), { page: page, limit: limit });
+    const likedVideos = await Like.aggregatePaginate(Like.aggregate(aggregationPipeline), { page, limit });
 
     res.status(200).json({
         success: true,
         message: "Liked Videos Successfully fetched",
-        likedVideos: paginatedLikedVideos,
+        data: { likedVideos },
     });
 });
 
@@ -205,23 +190,21 @@ const getLikedTweets = asyncHandler(async (req, res) => {
         },
     ];
 
-    // pagination parameters
-    let { page = 1, limit = 10 } = req.query;
-    page = Math.max(1, parseInt(page)); // ensuring page is atleast 1
-    limit = Math.max(1, parseInt(limit)); // ensuring limit is atleast 1
+    // Pagination params
+    const { page, limit } = parsePagination(req.query);
 
-    const paginatedLikedTweets = await Like.aggregatePaginate(Like.aggregate(likedTweetsAggregation), {
-        page: parseInt(page),
-        limit: parseInt(limit),
+    const likedTweets = await Like.aggregatePaginate(Like.aggregate(likedTweetsAggregation), {
+        page,
+        limit,
     });
 
-    res.status(200).json({ success: true, message: "Liked Tweets Successfully fetched", likedTweets: paginatedLikedTweets });
+    res.status(200).json({ success: true, message: "Liked Tweets Successfully fetched", data: { likedTweets } });
 });
 
 // Get liked comments of logged-in user
 const getLikedComments = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
-    const likedCommentsAggregation = [
+    const pipeline = [
         {
             $match: {
                 likedBy: loggedInUser._id,
@@ -273,16 +256,14 @@ const getLikedComments = asyncHandler(async (req, res) => {
     ];
 
     // pagination parameters
-    let { page = 1, limit = 10 } = req.query;
-    page = Math.max(1, Number(page));
-    limit = Math.max(1, Number(limit)); // ensuring limit is atleast 1
+    const { page, limit } = parsePagination(req.query);
 
-    const paginatedLikedComments = await Like.aggregatePaginate(Like.aggregate(likedCommentsAggregation), {
-        page: Number(page),
-        limit: Number(limit),
+    const likedComments = await Like.aggregatePaginate(Like.aggregate(pipeline), {
+        page,
+        limit,
     });
 
-    res.status(200).json({ success: true, message: "Liked Comments Successfully fetched", likedComments: paginatedLikedComments });
+    res.status(200).json({ success: true, message: "Liked Comments Successfully fetched", data: { likedComments } });
 });
 
 export { likeOrUnlikeVideo, likeOrUnlikeComment, likeOrUnlikeTweet, getLikedVideos, getLikedTweets, getLikedComments };

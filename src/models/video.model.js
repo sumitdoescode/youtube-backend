@@ -51,29 +51,19 @@ const videoSchema = new mongoose.Schema(
 videoSchema.index({ owner: 1 });
 videoSchema.index({ views: -1 });
 
-videoSchema.pre("remove", async function (next) {
+videoSchema.methods.deleteWithCleanup = async function () {
     const videoId = this._id;
+    // this referes to the video document on which we are calling the method
 
-    try {
-        // Delete all likes associated with the video
-        await Like.deleteMany({ video: videoId });
+    // Cleanup
+    await Like.deleteMany({ video: videoId });
+    await Comment.deleteMany({ video: videoId });
+    await WatchHistory.deleteMany({ video: videoId });
+    await Playlist.updateMany({ videos: videoId }, { $pull: { videos: videoId } });
 
-        // Delete all comments associated with the video
-        await Comment.deleteMany({ video: videoId });
-        // Comment model should already delete comment likes via its own middleware
-
-        // Delete all watch history entries for the video
-        await WatchHistory.deleteMany({ video: videoId });
-
-        // Remove video from all playlists
-        await Playlist.updateMany({ videos: videoId }, { $pull: { videos: videoId } });
-
-        next();
-    } catch (err) {
-        next(err);
-    }
-});
-
+    // Delete video document
+    await this.deleteOne();
+};
 // mongoose let's you add plugin and we will add "mongoose-aggregate-paginate-v2"
 videoSchema.plugin(mongooseAggregatePaginate);
 // mongooseAggregratePaginate will enable us to implement paginatin in videos

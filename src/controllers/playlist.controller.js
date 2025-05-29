@@ -5,16 +5,8 @@ import Video from "../models/video.model.js";
 import Playlist from "../models/playlist.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
-
-// Check ownership helper
-const checkOwnership = asyncHandler(async (resource, userId) => {
-    if (!resource?.owner) {
-        throw new ApiError(500, "Resource does not have an owner field");
-    }
-    if (resource.owner.toString() !== userId.toString()) {
-        throw new ApiError(403, "Access denied. You are not the owner of this");
-    }
-});
+import { validatePlaylistExists, validateVideoExists, validateUserExists } from "../utils/validateExists.js";
+import { checkOwnership } from "../utils/checkOwnership.js";
 
 const createPlaylist = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
@@ -31,16 +23,14 @@ const createPlaylist = asyncHandler(async (req, res) => {
         owner: loggedInUser._id,
     });
 
-    res.status(201).json({ success: true, message: "Playlist created successfully", playlist });
+    res.status(201).json({ success: true, message: "Playlist created successfully", data: { playlist } });
 });
 
 const updatePlaylist = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
     const { title, description } = req.body;
 
-    if (!isValidObjectId(playlistId)) throw new ApiError(400, "Invalid playlist id");
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) throw new ApiError(404, "Playlist not found");
+    const playlist = await validatePlaylistExists(playlistId);
 
     // either title or description is required
     if (!title?.trim() && !description?.trim()) {
@@ -58,16 +48,13 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     }
     await playlist.save();
 
-    res.status(200).json({ success: true, message: "Playlist updated successfully", playlist });
+    res.status(200).json({ success: true, message: "Playlist updated successfully", data: { playlist } });
 });
 
 const deletePlaylist = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
 
-    if (!isValidObjectId(playlistId)) throw new ApiError(400, "Invalid playlist id");
-
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) throw new ApiError(404, "Playlist not found");
+    const playlist = await validatePlaylistExists(playlistId);
 
     const loggedInUser = await getAuthenticatedUser(req);
 
@@ -77,19 +64,17 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: "Playlist deleted successfully" });
 });
 
+// add or remove video from playlist
 const toggleVideoInPlaylist = asyncHandler(async (req, res) => {
     const { playlistId, videoId } = req.params;
 
-    if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
-        throw new ApiError(400, "Invalid playlist or video id");
-    }
+    const playlist = await validatePlaylistExists(playlistId);
+    const video = await validateVideoExists(videoId);
 
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) throw new ApiError(404, "Playlist not found");
+    // the video is user trying to add in the playlist is private
+    if (video.visibility === "private") throw new ApiError(404, "Video not found/private");
 
     const loggedInUser = await getAuthenticatedUser(req);
-    const video = await Video.findById(videoId);
-    if (!video || video.visibility === "private") throw new ApiError(404, "Video not found");
 
     await checkOwnership(playlist, loggedInUser._id);
 
@@ -110,9 +95,7 @@ const toggleVideoInPlaylist = asyncHandler(async (req, res) => {
 const getPlaylistById = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
 
-    if (!isValidObjectId(playlistId)) throw new ApiError(400, "Invalid playlist id");
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) throw new ApiError(404, "Playlist not found");
+    const playlist = await validatePlaylistExists(playlistId);
 
     const loggedInUser = await getAuthenticatedUser(req);
 
@@ -177,22 +160,20 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     const result = await Playlist.aggregate(pipeline);
     const playlistData = result[0];
 
-    res.status(200).json({ success: true, playlist: playlistData });
+    res.status(200).json({ success: true, message: "Playlist successfully fetched with videos", data: { playlist: playlistData } });
 });
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    if (!isValidObjectId(userId)) throw new ApiError(400, "Invalid user ID");
-
-    const user = await User.findById(userId);
-    if (!user) throw new ApiError(404, "User not found");
+    const user = await validateUserExists(userId);
 
     const playlists = await Playlist.aggregate([
         {
             $match: {
                 owner: new mongoose.Types.ObjectId(userId),
                 visibility: "public",
+                // playlist visibility should be public
             },
         },
         {
@@ -223,16 +204,13 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         { $sort: { createdAt: -1 } },
     ]);
 
-    res.status(200).json({ success: true, playlists });
+    res.status(200).json({ success: true, message: "User playlists fetched successfully", data: { playlists } });
 });
 
 const togglePlaylistVisibility = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
 
-    if (!isValidObjectId(playlistId)) throw new ApiError(400, "Invalid playlist id");
-
-    const playlist = await Playlist.findById(playlistId);
-    if (!playlist) throw new ApiError(404, "Playlist not found");
+    const playlist = await validatePlaylistExists(playlistId);
 
     const loggedInUser = await getAuthenticatedUser(req);
 

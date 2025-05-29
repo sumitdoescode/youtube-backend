@@ -1,10 +1,10 @@
-import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import Subscription from "../models/subscription.model.js";
 import Like from "../models/like.model.js";
 import Video from "../models/video.model.js";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import mongoose from "mongoose";
+import { parsePagination } from "../utils/parsePagination.js";
 
 const getChannelStats = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
@@ -82,11 +82,13 @@ const getChannelStats = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Channel stats fetched successfully",
-        totalSubscribersCount,
-        totalSubscribedToCount,
-        totalLikes,
-        totalCommentsCount,
-        totalViewsCount,
+        data: {
+            totalSubscribersCount,
+            totalSubscribedToCount,
+            totalLikes,
+            totalCommentsCount,
+            totalViewsCount,
+        },
     });
 });
 
@@ -141,12 +143,10 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     ];
 
     // pagination parameters
-    let { page = 1, limit = 10 } = req.query;
-    page = Math.max(1, parseInt(page));
-    limit = Math.max(1, parseInt(limit));
+    const { page, limit } = parsePagination(req.query);
 
-    const paginatedVideos = await Video.aggregatePaginate(Video.aggregate(pipeline), { page: page, limit: limit });
-    res.status(200).json({ success: true, message: "videos generated successfully", videos: paginatedVideos });
+    const videos = await Video.aggregatePaginate(Video.aggregate(pipeline), { page, limit });
+    res.status(200).json({ success: true, message: "Channel Videos Fetched Successfully", data: { videos } });
 });
 
 export { getChannelStats, getChannelVideos };
