@@ -52,6 +52,7 @@ const likeOrUnlikeComment = asyncHandler(async (req, res) => {
 
     const session = await mongoose.startSession();
     try {
+        session.startTransaction();
         const liked = await Like.findOneAndDelete({ comment: comment._id, likedBy: loggedInUser._id });
         if (liked) {
             // if liked, delete the like
@@ -83,6 +84,7 @@ const likeOrUnlikeTweet = asyncHandler(async (req, res) => {
     const session = await mongoose.startSession();
 
     try {
+        session.startTransaction();
         const liked = await Like.findOneAndDelete({ tweet: tweetId, likedBy: loggedInUser._id });
         if (liked) {
             // if liked, delete the like
