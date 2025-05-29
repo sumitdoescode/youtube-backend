@@ -24,6 +24,10 @@ const likeSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+likeSchema.index({ video: 1, likedBy: 1 });
+likeSchema.index({ comment: 1, likedBy: 1 });
+likeSchema.index({ tweet: 1, likedBy: 1 });
+
 likeSchema.plugin(mongooseAggregatePaginate);
 
 const Like = mongoose.model("Like", likeSchema);

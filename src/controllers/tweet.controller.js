@@ -2,6 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import Tweet from "../models/tweet.model.js";
 import User from "../models/user.model.js";
+import Like from "../models/like.model.js";
 import { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import mongoose from "mongoose";
@@ -41,6 +42,13 @@ const getUserTweets = asyncHandler(async (req, res) => {
         },
         { $unwind: "$owner" },
         {
+            $addFields: {
+                isLiked: {
+                    $literal: false, // Placeholder; will override later
+                },
+            },
+        },
+        {
             $lookup: {
                 from: "likes",
                 localField: "_id",
@@ -71,6 +79,17 @@ const getUserTweets = asyncHandler(async (req, res) => {
     const { page, limit } = parsePagination(req.query);
 
     const tweets = await Tweet.aggregatePaginate(Tweet.aggregate(tweetPipeline), { page, limit });
+
+    // Fetch liked tweet IDs by loggedInUser (just once)
+    const likedTweetIds = await Like.find({
+        tweet: { $in: tweets.docs.map((t) => t._id) },
+        likedBy: loggedInUser._id,
+    }).distinct("tweet");
+
+    // Update `isLiked` manually in the results
+    tweets.docs.forEach((tweet) => {
+        tweet.isLiked = likedTweetIds.some((id) => id.equals(tweet._id));
+    });
 
     res.status(200).json({
         success: true,

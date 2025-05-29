@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
-import Like from "./like.model.js"; // ✅ Ensure proper file extension
+import Like from "./like.model.js";
 
 const tweetSchema = new mongoose.Schema(
     {
@@ -14,6 +14,10 @@ const tweetSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
+        },
+        likesCount: {
+            type: Number,
+            default: 0,
         },
     },
     { timestamps: true }

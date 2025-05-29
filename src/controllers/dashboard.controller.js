@@ -9,75 +9,34 @@ import { parsePagination } from "../utils/parsePagination.js";
 const getChannelStats = asyncHandler(async (req, res) => {
     const loggedInUser = await getAuthenticatedUser(req);
 
-    // Count total subscribers of the channel (i.e., how many users subscribed to this user's channel)
-    const totalSubscribersCount = await Subscription.countDocuments({
-        channel: loggedInUser._id,
-    });
+    // Count total subscribers of the channel (i.e., how many users subscribed to this user's channel) and how many channels this user is subscribed to
+    const [totalSubscribersCount, totalSubscribedToCount] = await Promise.all([
+        Subscription.countDocuments({
+            channel: loggedInUser._id,
+        }),
+        Subscription.countDocuments({
+            subscriber: loggedInUser._id,
+        }),
+    ]);
 
-    // Count how many channels this user is subscribed to
-    const totalSubscribedToCount = await Subscription.countDocuments({
-        subscriber: loggedInUser._id,
-    });
-
-    // Sum of likes on this user's videos
-    const totalLikesAgg = await Video.aggregate([
+    // Combined aggregation for likes, comments, and views
+    const videoStatsAgg = await Video.aggregate([
         {
-            $match: { owner: new mongoose.Types.ObjectId(loggedInUser._id) },
-        },
-        {
-            $lookup: {
-                from: "likes",
-                localField: "_id",
-                foreignField: "video",
-                as: "likes",
-            },
-        },
-        {
-            $project: {
-                likesCount: { $size: "$likes" },
+            $match: {
+                owner: new mongoose.Types.ObjectId(loggedInUser._id),
             },
         },
         {
             $group: {
                 _id: null,
                 totalLikes: { $sum: "$likesCount" },
-            },
-        },
-    ]);
-
-    const totalLikes = totalLikesAgg?.[0]?.totalLikes || 0;
-
-    // Total comments on this user's videos
-    const totalCommentsAgg = await Video.aggregate([
-        {
-            $match: { owner: new mongoose.Types.ObjectId(loggedInUser._id) },
-        },
-        {
-            $lookup: {
-                from: "comments",
-                localField: "_id",
-                foreignField: "video",
-                as: "comments",
-            },
-        },
-        {
-            $project: {
-                commentsCount: { $size: "$comments" },
-            },
-        },
-        {
-            $group: {
-                _id: null,
                 totalComments: { $sum: "$commentsCount" },
+                totalViews: { $sum: "$views" },
             },
         },
     ]);
 
-    const totalCommentsCount = totalCommentsAgg?.[0]?.totalComments || 0;
-
-    // Sum total views of this user's videos
-    const videos = await Video.find({ owner: loggedInUser._id }).select("views");
-    const totalViewsCount = videos.reduce((sum, video) => sum + (video.views || 0), 0);
+    const { totalLikes = 0, totalComments = 0, totalViews = 0 } = videoStatsAgg?.[0] || {};
 
     res.status(200).json({
         success: true,
@@ -86,8 +45,8 @@ const getChannelStats = asyncHandler(async (req, res) => {
             totalSubscribersCount,
             totalSubscribedToCount,
             totalLikes,
-            totalCommentsCount,
-            totalViewsCount,
+            totalComments,
+            totalViews,
         },
     });
 });
@@ -102,32 +61,6 @@ const getChannelVideos = asyncHandler(async (req, res) => {
             },
         },
         {
-            $lookup: {
-                from: "likes",
-                localField: "_id",
-                foreignField: "video",
-                as: "likes",
-            },
-        },
-        {
-            $lookup: {
-                from: "comments",
-                localField: "_id",
-                foreignField: "video",
-                as: "comments",
-            },
-        },
-        {
-            $addFields: {
-                likesCount: {
-                    $size: "$likes",
-                },
-                commentsCount: {
-                    $size: "$comments",
-                },
-            },
-        },
-        {
             $project: {
                 _id: 1,
                 title: 1,
@@ -135,9 +68,9 @@ const getChannelVideos = asyncHandler(async (req, res) => {
                 duration: 1,
                 views: 1,
                 thumbnail: 1,
-                createdAt: 1,
                 likesCount: 1,
                 commentsCount: 1,
+                createdAt: 1,
             },
         },
     ];

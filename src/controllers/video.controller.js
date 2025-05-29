@@ -159,14 +159,6 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "likes",
-                localField: "_id",
-                foreignField: "video",
-                as: "likes",
-            },
-        },
-        {
-            $lookup: {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
@@ -174,12 +166,6 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
         },
         { $unwind: "$owner" },
-        {
-            $addFields: {
-                likesCount: { $size: "$likes" },
-                isLiked: { $in: [loggedInUser._id, "$likes.likedBy"] },
-            },
-        },
         {
             $project: {
                 title: 1,
@@ -191,7 +177,6 @@ const getVideoById = asyncHandler(async (req, res) => {
                 createdAt: 1,
                 updatedAt: 1,
                 likesCount: 1,
-                isLiked: 1,
                 owner: {
                     username: 1,
                     avatar: 1,
@@ -202,6 +187,9 @@ const getVideoById = asyncHandler(async (req, res) => {
 
     if (!videoData.length) throw new ApiError(404, "Video not found");
 
+    // isLiked
+    const isLiked = !!(await Like.exists({ video: videoId, likedBy: loggedInUser._id }));
+
     // Increment the views count
     await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
 
@@ -210,7 +198,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         await WatchHistory.findOneAndUpdate({ video: videoId, watchedBy: loggedInUser._id }, {}, { upsert: true, new: true, setDefaultsOnInsert: true });
     }
 
-    res.status(200).json({ success: true, message: "Video Successfully Fetched", data: { video: videoData[0] } });
+    res.status(200).json({ success: true, message: "Video Successfully Fetched", data: { video: { ...videoData[0], isLiked } } });
 });
 
 // Update a video
