@@ -1,9 +1,7 @@
-import express from "express";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import User from "../models/user.model.js";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
-import WatchHistory from "../models/watchHistory.model.js";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 
 const getCurrentUser = asyncHandler(async (req, res) => {

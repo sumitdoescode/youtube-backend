@@ -1,9 +1,6 @@
 import asyncHandler from "../utils/asyncHandler.js";
-import ApiError from "../utils/ApiError.js";
-import Video from "../models/video.model.js";
 import WatchHistory from "../models/watchHistory.model.js";
 import User from "../models/user.model.js";
-import { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import { parsePagination } from "../utils/parsePagination.js";
 import { validateWatchHistoryExists } from "../utils/validateExists.js";

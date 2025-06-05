@@ -1,9 +1,7 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import Tweet from "../models/tweet.model.js";
-import User from "../models/user.model.js";
 import Like from "../models/like.model.js";
-import { isValidObjectId } from "mongoose";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import mongoose from "mongoose";
 import { parsePagination } from "../utils/parsePagination.js";

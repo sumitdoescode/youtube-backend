@@ -1,7 +1,6 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import mongoose, { isValidObjectId } from "mongoose";
-import User from "../models/user.model.js";
 import Subscription from "../models/subscription.model.js";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import { parsePagination } from "../utils/parsePagination.js";

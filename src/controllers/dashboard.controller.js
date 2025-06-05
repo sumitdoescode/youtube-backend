@@ -1,6 +1,5 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import Subscription from "../models/subscription.model.js";
-import Like from "../models/like.model.js";
 import Video from "../models/video.model.js";
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import mongoose from "mongoose";

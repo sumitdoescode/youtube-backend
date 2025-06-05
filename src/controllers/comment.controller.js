@@ -1,9 +1,7 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import mongoose, { isValidObjectId } from "mongoose";
-import Video from "../models/video.model.js";
 import Comment from "../models/comment.model.js";
-import User from "../models/user.model.js"; // ✅ Missing in your original code
 import getAuthenticatedUser from "../utils/authenticatedUser.js";
 import { parsePagination } from "../utils/parsePagination.js";
 import { validateCommentExists, validateVideoExists } from "../utils/validateExists.js";
