@@ -5,8 +5,7 @@ import { flattenError } from "zod";
 import { LoginUserSchema } from "../schemas/user.schema";
 import { put, del } from "@vercel/blob";
 import { CoverImageSchema, UserImageSchema } from "../schemas/image.schema";
-
-// const { url } = await put('articles/blob.txt', 'Hello World!', { access: 'public' });
+import mongoose from "mongoose";
 
 export const register = async (c: Context) => {
     try {
@@ -93,7 +92,7 @@ export const logout = async (c: Context) => {
 export const me = async (c: Context) => {
     const user = c.get("user");
     try {
-        return c.json({ user });
+        return c.json({ success: true, user }, 200);
     } catch (error) {
         console.error("Error getting current user:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
@@ -131,7 +130,7 @@ export const setCoverImage = async (c: Context) => {
             await del(oldCoverImage);
         }
 
-        return c.json({ coverImage: url });
+        return c.json({ success: true, coverImage: url }, 200);
     } catch (error) {
         console.error("Error setting cover image:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
@@ -169,7 +168,7 @@ export const setImage = async (c: Context) => {
             await del(oldImage);
         }
 
-        return c.json({ image: url });
+        return c.json({ success: true, image: url }, 200);
     } catch (error) {
         console.error("Error setting user image:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
@@ -187,9 +186,31 @@ export const toggleWatchHistory = async (c: Context) => {
             },
             headers: c.req.raw.headers,
         });
-        return c.json({ watchHistory: !watchHistory }, 200);
+        return c.json({ success: true, watchHistory: !watchHistory }, 200);
     } catch (error) {
         console.error("Error toggling watch history:", error);
+        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+    }
+};
+
+export const getUserByUsername = async (c: Context) => {
+    try {
+        // const user = c.get("user");
+        const username = c.req.param("username");
+        if (!username) {
+            return c.json({ error: "Username is required" }, 400);
+        }
+        const db = mongoose.connection.db;
+        if (!db) {
+            return c.json({ error: "Database connection not found" }, 500);
+        }
+        const user = await db.collection("user").findOne({ username }, { projection: { _id: 1, name: 1, username: 1, image: 1, coverImage: 1, createdAt: 1, updatedAt: 1 } });
+        if (!user) {
+            return c.json({ error: "User not found with username :", username }, 404);
+        }
+        return c.json({ success: true, user }, 200);
+    } catch (error) {
+        console.error("Error getting user by username:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
     }
 };
