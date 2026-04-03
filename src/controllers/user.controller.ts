@@ -195,7 +195,6 @@ export const toggleWatchHistory = async (c: Context) => {
 
 export const getUserByUsername = async (c: Context) => {
     try {
-        // const user = c.get("user");
         const username = c.req.param("username");
         if (!username) {
             return c.json({ error: "Username is required" }, 400);

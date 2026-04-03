@@ -75,9 +75,8 @@ export const getAllVideos = async (c: Context) => {
     }
 };
 
-export const getUserVideos = async (c: Context) => {
+export const getVideosByUsername = async (c: Context) => {
     try {
-        const user = c.get("user");
         const username = c.req.param("username");
         const { sortBy = "viewsCount", sortOrder = "desc" } = c.req.query();
         if (sortBy !== "viewsCount" && sortBy !== "duration" && sortBy !== "createdAt") {

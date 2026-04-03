@@ -5,6 +5,10 @@ import { WatchHistory } from "../models/watchHistory.model";
 export const getWatchHistory = async (c: Context) => {
     try {
         const user = c.get("user");
+        const { sortOrder = "desc" } = c.req.query();
+        if (sortOrder !== "asc" && sortOrder !== "desc") {
+            return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
+        }
         const watchHistory = await WatchHistory.aggregate([
             {
                 $match: {
@@ -88,7 +92,6 @@ export const deleteAllWatchHistory = async (c: Context) => {
 };
 
 export const deleteWatchHistory = async (c: Context) => {
-    console.log("coming here..");
     try {
         const user = c.get("user");
         const watchHistoryId = c.req.param("id");
