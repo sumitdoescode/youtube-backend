@@ -76,29 +76,30 @@ export const getChannelStats = async (c: Context) => {
 
 // dashboard controller here we will show all the videos (even if they are private)
 export const getChannelVideos = async (c: Context) => {
-    const user = c.get("user");
-    const videos = await Video.aggregate([
-        {
-            $match: {
-                owner: new Types.ObjectId(user.id),
-            },
-        },
-        {
-            $project: {
-                _id: 1,
-                title: 1,
-                description: 1,
-                thumbnail: 1,
-                duration: 1,
-                viewsCount: 1,
-                visibility: 1,
-                owner: 1,
-                createdAt: 1,
-                updatedAt: 1,
-            },
-        },
-    ]);
     try {
+        const user = c.get("user");
+        const videos = await Video.aggregate([
+            {
+                $match: {
+                    owner: new Types.ObjectId(user.id),
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    title: 1,
+                    description: 1,
+                    thumbnail: 1,
+                    duration: 1,
+                    viewsCount: 1,
+                    visibility: 1,
+                    owner: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                },
+            },
+        ]);
+        return c.json({ success: true, videos }, 200);
     } catch (error) {
         console.error("GET CHANNEL VIDEOS ERROR : ", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);

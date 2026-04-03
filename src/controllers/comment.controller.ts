@@ -77,6 +77,13 @@ export const getVideoComments = async (c: Context) => {
         if (!isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
         }
+        const { sortType = "createdAt", sortOrder = "desc" } = c.req.query();
+        if (sortType !== "createdAt" && sortType !== "likesCount") {
+            return c.json({ error: "Invalid sort type it can only be (createdAt, likesCount)" }, 400);
+        }
+        if (sortOrder !== "asc" && sortOrder !== "desc") {
+            return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
+        }
         const video = await Video.exists({ _id: videoId });
         if (!video) {
             return c.json({ error: "Video not found" }, 404);
@@ -126,7 +133,7 @@ export const getVideoComments = async (c: Context) => {
             },
             {
                 $sort: {
-                    createdAt: -1,
+                    [sortType]: sortOrder === "asc" ? 1 : -1,
                 },
             },
             {
@@ -154,6 +161,13 @@ export const getTweetComments = async (c: Context) => {
         const tweetId = c.req.param("id");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
+        }
+        const { sortType = "createdAt", sortOrder = "desc" } = c.req.query();
+        if (sortType !== "createdAt" && sortType !== "likesCount") {
+            return c.json({ error: "Invalid sort type it can only be (createdAt, likesCount)" }, 400);
+        }
+        if (sortOrder !== "asc" && sortOrder !== "desc") {
+            return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
         }
         const tweet = await Tweet.exists({ _id: tweetId });
         if (!tweet) {
@@ -204,7 +218,7 @@ export const getTweetComments = async (c: Context) => {
             },
             {
                 $sort: {
-                    createdAt: -1,
+                    [sortType]: sortOrder === "asc" ? 1 : -1,
                 },
             },
             {

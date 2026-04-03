@@ -4,6 +4,7 @@ import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = new Hono();
 
+// prefix => /api/comments
 router.post("/video/:id", requireAuth, addCommentOnVideo); // POST => /api/comments/video/:id
 router.post("/tweet/:id", requireAuth, addCommentOnTweet); // POST => /api/comments/tweet/:id
 router.get("/video/:id", requireAuth, getVideoComments); // GET => /api/comments/video/:id

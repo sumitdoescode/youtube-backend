@@ -12,7 +12,6 @@ import { Comment } from "../models/comment.model";
 
 export const getAllVideos = async (c: Context) => {
     try {
-        const user = c.get("user");
         const { query, sortBy = "viewsCount", sortOrder = "desc" } = c.req.query();
         if (!query?.trim()) {
             return c.json({ error: "Query is required" }, 400);

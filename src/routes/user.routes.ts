@@ -11,6 +11,6 @@ router.get("/me", requireAuth, me); // GET => /api/users/me
 router.post("/cover-image", requireAuth, setCoverImage); // POST => /api/users/cover-image
 router.post("/image", requireAuth, setImage); // POST => /api/users/image
 router.patch("/watch-history/toggle", requireAuth, toggleWatchHistory); // PATCH => /api/users/watch-history/toggle
-router.get("/:username", requireAuth, getUserByUsername); // GET => /api/users/:username
+router.get("/:username", getUserByUsername); // GET => /api/users/:username
 
 export default router;

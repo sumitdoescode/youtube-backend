@@ -31,8 +31,10 @@ export const toggleSubscription = async (c: Context) => {
 
 export const getChannelSubscribersAndSubscribedToCount = async (c: Context) => {
     try {
-        const user = c.get("user");
         const username = c.req.param("username");
+        if (!username?.trim()) {
+            return c.json({ error: "Username is required" }, 400);
+        }
 
         const db = mongoose.connection.db;
         if (!db) {
@@ -40,7 +42,7 @@ export const getChannelSubscribersAndSubscribedToCount = async (c: Context) => {
         }
         const channel = await db.collection("user").findOne({ username: username?.toLowerCase().trim() }, { projection: { _id: 1 } });
         if (!channel) {
-            return c.json({ error: "Channel not found" }, 404);
+            return c.json({ error: `Channel not found with username : ${username}` }, 404);
         }
 
         const [subscriberCount, subscribedToCount] = await Promise.all([Subscription.countDocuments({ channel: channel._id }), Subscription.countDocuments({ subscriber: channel._id })]);

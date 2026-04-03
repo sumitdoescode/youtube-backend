@@ -4,8 +4,8 @@ import { requireAuth } from "../middlewares/auth.middleware";
 
 const router = new Hono();
 
-router.get("/", requireAuth, getAllVideos); // GET => /api/videos
-router.get("/user/:username", requireAuth, getUserVideos); // GET => /api/videos/user/:username
+router.get("/", getAllVideos); // GET => /api/videos
+router.get("/user/:username", getUserVideos); // GET => /api/videos/user/:username
 router.post("/", requireAuth, uploadVideo); // POST => /api/videos
 router.get("/:id", requireAuth, getVideoById); // GET => /api/videos/:videoId
 router.patch("/:id", requireAuth, updateVideo); // PATCH => /api/videos/:videoId

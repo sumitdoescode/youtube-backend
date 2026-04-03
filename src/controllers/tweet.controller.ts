@@ -63,8 +63,10 @@ export const getOwnTweets = async (c: Context) => {
 
 export const getUserTweets = async (c: Context) => {
     try {
-        const user = c.get("user");
         const username = c.req.param("username");
+        if (!username) {
+            return c.json({ error: "Username is required" }, 400);
+        }
         const { sortOrder = "desc" } = c.req.query();
         if (sortOrder !== "asc" && sortOrder !== "desc") {
             return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
