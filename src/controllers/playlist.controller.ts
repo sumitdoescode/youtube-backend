@@ -3,6 +3,7 @@ import { Playlist } from "../models/playlist.model";
 import { isValidObjectId, Types } from "mongoose";
 import { createPlaylistSchema, updatePlaylistSchema } from "../schemas/playlist.schema";
 import { flattenError } from "zod";
+import { db } from "../lib/db";
 
 export const createPlaylist = async (c: Context) => {
     try {
@@ -132,7 +133,7 @@ export const updatePlaylist = async (c: Context) => {
 
         const playlist = await Playlist.findOneAndUpdate({ _id: playlistId, owner: new Types.ObjectId(user.id) }, { name, description }, { new: true });
         if (!playlist) {
-            return c.json({ error: "Playlist not found or not owned by you" }, 404);
+            return c.json({ error: "Playlist not found or you are not authorized to update it" }, 404);
         }
         return c.json({ success: true, playlist }, 200);
     } catch (error) {
@@ -149,7 +150,7 @@ export const deletePlaylist = async (c: Context) => {
         }
         const playlist = await Playlist.findOneAndDelete({ _id: playlistId, owner: new Types.ObjectId(user.id) });
         if (!playlist) {
-            return c.json({ error: "Playlist not found or not owned by you" }, 404);
+            return c.json({ error: "Playlist not found or you are not authorized to delete it" }, 404);
         }
         return c.json({ success: true, message: "Playlist deleted successfully" }, 200);
     } catch (error) {
@@ -157,10 +158,68 @@ export const deletePlaylist = async (c: Context) => {
     }
 };
 
-export const getUserPlaylists = async (c: Context) => {
+export const getPlaylistsByUsername = async (c: Context) => {
     try {
         const user = c.get("user");
-        const playlists = await Playlist.find({ owner: new Types.ObjectId(user.id) });
+        const username = c.req.param("username");
+        if (!username) {
+            return c.json({ error: "Username is required" }, 400);
+        }
+        const targetUser = await db?.collection("user").findOne({ username: username?.toLowerCase().trim() });
+        if (!targetUser) {
+            return c.json({ error: "User not found" }, 404);
+        }
+
+        const { sortOrder = "desc" } = c.req.query();
+        if (sortOrder !== "asc" && sortOrder !== "desc") {
+            return c.json({ error: "Invalid sort order. Use 'asc' or 'desc'" }, 400);
+        }
+
+        const playlists = await Playlist.aggregate([
+            {
+                $match: {
+                    owner: new Types.ObjectId(targetUser._id),
+                    $or: [{ visibility: "public" }, { owner: new Types.ObjectId(user.id) }],
+                },
+            },
+            {
+                $lookup: {
+                    from: "user",
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "owner",
+                    pipeline: [
+                        {
+                            $project: {
+                                _id: 1,
+                                name: 1,
+                                username: 1,
+                                image: 1,
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $unwind: "$owner",
+            },
+            {
+                $sort: {
+                    createdAt: sortOrder === "asc" ? 1 : -1,
+                },
+            },
+            {
+                $project: {
+                    name: 1,
+                    description: 1,
+                    visibility: 1,
+                    owner: 1,
+                    videosCount: { $size: "$videos" },
+                    createdAt: 1,
+                    updatedAt: 1,
+                },
+            },
+        ]);
         return c.json({ success: true, playlists }, 200);
     } catch (error) {
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);

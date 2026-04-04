@@ -53,4 +53,9 @@ const videoSchema = new Schema(
     { timestamps: true },
 );
 
+videoSchema.index({ owner: 1 });
+videoSchema.index({ owner: 1, visibility: 1 });
+videoSchema.index({ visibility: 1, viewsCount: -1 });
+videoSchema.index({ visibility: 1, duration: -1 });
+videoSchema.index({ visibility: 1, createdAt: -1 });
 export const Video = model("Video", videoSchema);

@@ -42,8 +42,8 @@ export const toggleTweetLike = async (c: Context) => {
             return c.json({ error: "Tweet not found" }, 404);
         }
 
-        const deletedTweet = await Like.findOneAndDelete({ tweet: tweetId, likedBy: user.id });
-        if (!deletedTweet) {
+        const deletedLike = await Like.findOneAndDelete({ tweet: tweetId, likedBy: user.id });
+        if (!deletedLike) {
             await Like.create({ tweet: tweetId, likedBy: user.id });
             return c.json({ success: true, message: "Tweet liked successfully" }, 200);
         }

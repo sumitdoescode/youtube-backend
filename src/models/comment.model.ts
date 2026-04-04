@@ -23,4 +23,7 @@ const commentSchema = new Schema(
     { timestamps: true },
 );
 
+commentSchema.index({ video: 1, createdAt: -1 });
+commentSchema.index({ tweet: 1, createdAt: -1 });
+commentSchema.index({ owner: 1 });
 export const Comment = model("Comment", commentSchema);

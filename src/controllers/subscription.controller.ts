@@ -15,7 +15,7 @@ export const toggleSubscription = async (c: Context) => {
         // Better Auth stores users in the `user` collection, so query it directly.
         const channel = await db.collection("user").findOne({ username: username?.toLowerCase().trim() }, { projection: { _id: 1 } });
         if (!channel) {
-            return c.json({ error: "Channel not found" }, 404);
+            return c.json({ error: `Channel not found with username : ${username}` }, 404);
         }
         const subscriptionDeleted = await Subscription.findOneAndDelete({ subscriber: user.id, channel: channel._id });
         if (!subscriptionDeleted) {
@@ -72,7 +72,7 @@ export const getChannelSubscribers = async (c: Context) => {
         }
         const channel = await db.collection("user").findOne({ username: username?.toLowerCase().trim() }, { projection: { _id: 1 } });
         if (!channel) {
-            return c.json({ error: "Channel not found with username : ", username }, 404);
+            return c.json({ error: `Channel not found with username : ${username}` }, 404);
         }
         const currentUserId = new Types.ObjectId(user.id);
 
@@ -150,7 +150,7 @@ export const getSubscribedChannels = async (c: Context) => {
         }
         const channel = await db.collection("user").findOne({ username: username?.toLowerCase().trim() }, { projection: { _id: 1 } });
         if (!channel) {
-            return c.json({ error: "Channel not found with username : ", username }, 404);
+            return c.json({ error: `Channel not found with username : ${username}` }, 404);
         }
         const currentUserId = new Types.ObjectId(user.id);
 

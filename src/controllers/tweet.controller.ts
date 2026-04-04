@@ -4,8 +4,9 @@ import { CreateTweetSchema, UpdateTweetSchema } from "../schemas/tweet.schema";
 import { Tweet } from "../models/tweet.model";
 import mongoose, { isValidObjectId } from "mongoose";
 import { Types } from "mongoose";
+import { Like } from "../models/like.model";
 
-export const getOwnTweets = async (c: Context) => {
+export const getTweetsByUsername = async (c: Context) => {
     try {
         const user = c.get("user");
         const { sortOrder = "desc" } = c.req.query();
@@ -61,30 +62,18 @@ export const getOwnTweets = async (c: Context) => {
     }
 };
 
-export const getUserTweets = async (c: Context) => {
+export const getTweetById = async (c: Context) => {
     try {
-        const username = c.req.param("username");
-        if (!username) {
-            return c.json({ error: "Username is required" }, 400);
-        }
-        const { sortOrder = "desc" } = c.req.query();
-        if (sortOrder !== "asc" && sortOrder !== "desc") {
-            return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
+        const user = c.get("user");
+        const tweetId = c.req.param("id");
+        if (!isValidObjectId(tweetId)) {
+            return c.json({ error: "Invalid tweet ID" }, 400);
         }
 
-        // check if the username actually exists
-        const db = mongoose.connection.db;
-        if (!db) {
-            return c.json({ error: "Database connection failed" }, 500);
-        }
-        const targetUser = await db.collection("user").findOne({ username: username?.toLowerCase().trim() });
-        if (!targetUser) {
-            return c.json({ error: "User not found" }, 404);
-        }
-        const tweets = await Tweet.aggregate([
+        const tweet = await Tweet.aggregate([
             {
                 $match: {
-                    owner: new Types.ObjectId(targetUser._id),
+                    _id: new Types.ObjectId(tweetId),
                 },
             },
             {
@@ -109,11 +98,6 @@ export const getUserTweets = async (c: Context) => {
                 $unwind: "$owner",
             },
             {
-                $sort: {
-                    createdAt: sortOrder === "asc" ? 1 : -1,
-                },
-            },
-            {
                 $project: {
                     _id: 1,
                     content: 1,
@@ -123,9 +107,18 @@ export const getUserTweets = async (c: Context) => {
                 },
             },
         ]);
-        return c.json({ success: true, tweets });
+        if (!tweet.length) {
+            return c.json({ error: "Tweet not found" }, 404);
+        }
+
+        const [likesCount, isLiked] = await Promise.all([Like.countDocuments({ tweet: new Types.ObjectId(tweetId) }), Like.findOne({ tweet: new Types.ObjectId(tweetId), likedBy: new Types.ObjectId(user.id) })]);
+
+        tweet[0].likesCount = likesCount;
+        tweet[0].isLiked = !!isLiked;
+
+        return c.json({ success: true, tweet: tweet[0] });
     } catch (error) {
-        console.error("GET USER TWEETS ERROR : ", error);
+        console.error("GET TWEET BY ID ERROR : ", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
     }
 };

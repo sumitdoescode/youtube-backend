@@ -16,4 +16,6 @@ const tweetSchema = new Schema(
     { timestamps: true },
 );
 
+tweetSchema.index({ owner: 1, createdAt: -1 });
+
 export const Tweet = model("Tweet", tweetSchema);

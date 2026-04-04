@@ -52,7 +52,7 @@ export const getAllVideos = async (c: Context) => {
             },
             {
                 $sort: {
-                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                    [sortBy]: sortOrder === "asc" ? 1 : -1, // sortBy => viewsCount, duration, createdAt
                 },
             },
             {
@@ -297,7 +297,7 @@ export const updateVideo = async (c: Context) => {
             return c.json({ error: "Invalid video ID" }, 400);
         }
 
-        const video = await Video.findOne({ _id: videoId, owner: user.id });
+        const video = await Video.findOne({ _id: videoId, owner: new Types.ObjectId(user.id) });
         if (!video) {
             return c.json({ error: "Video not found or unauthorized" }, 404);
         }
@@ -359,7 +359,7 @@ export const toggleVideoVisibility = async (c: Context) => {
             return c.json({ error: "Invalid video ID" }, 400);
         }
 
-        const video = await Video.findOne({ _id: videoId, owner: user.id });
+        const video = await Video.findOne({ _id: videoId, owner: new Types.ObjectId(user.id) });
         if (!video) {
             return c.json({ error: "Video not found or unauthorized" }, 404);
         }
@@ -383,7 +383,7 @@ export const deleteVideo = async (c: Context) => {
             return c.json({ error: "Invalid video ID" }, 400);
         }
 
-        const video = await Video.findOne({ _id: videoId, owner: user.id });
+        const video = await Video.findOne({ _id: videoId, owner: new Types.ObjectId(user.id) });
         if (!video) {
             return c.json({ error: "Video not found or unauthorized" }, 404);
         }
