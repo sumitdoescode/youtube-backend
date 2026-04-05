@@ -31,6 +31,8 @@ export const deleteVideoWithCleanup = async (video: any) => {
         const videoPublicId = video?.video?.publicId;
         const thumbnailPublicId = video?.thumbnail?.publicId;
 
+        await video.deleteOne();
+
         if (videoPublicId) {
             try {
                 await cloudinary.uploader.destroy(videoPublicId, {
