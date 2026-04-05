@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { AddCommentSchema } from "../schemas/comment.schema";
+import { AddCommentSchema, UpdateCommentSchema } from "../schemas/comment.schema";
 import { flattenError } from "zod";
 import { isValidObjectId, Types } from "mongoose";
 import { Video } from "../models/video.model";
@@ -9,6 +9,7 @@ import { Tweet } from "../models/tweet.model";
 export const addCommentOnVideo = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const videoId = c.req.param("videoId");
 
         if (!isValidObjectId(videoId)) {
@@ -27,7 +28,7 @@ export const addCommentOnVideo = async (c: Context) => {
         }
 
         const comment = await Comment.create({
-            owner: user.id,
+            owner: userId,
             content,
             video: videoId,
         });
@@ -41,6 +42,7 @@ export const addCommentOnVideo = async (c: Context) => {
 export const addCommentOnTweet = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const tweetId = c.req.param("tweetId");
 
         if (!isValidObjectId(tweetId)) {
@@ -59,7 +61,7 @@ export const addCommentOnTweet = async (c: Context) => {
         }
 
         const comment = await Comment.create({
-            owner: user.id,
+            owner: userId,
             content,
             tweet: tweetId,
         });
@@ -73,13 +75,14 @@ export const addCommentOnTweet = async (c: Context) => {
 export const getVideoComments = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const videoId = c.req.param("videoId");
         if (!isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
         }
-        const { sortType = "createdAt", sortOrder = "desc" } = c.req.query();
-        if (sortType !== "createdAt" && sortType !== "likesCount") {
-            return c.json({ error: "Invalid sort type it can only be (createdAt, likesCount)" }, 400);
+        const { sortBy = "createdAt", sortOrder = "desc" } = c.req.query();
+        if (sortBy !== "createdAt" && sortBy !== "likesCount") {
+            return c.json({ error: "Invalid sort by it can only be (createdAt, likesCount)" }, 400);
         }
         if (sortOrder !== "asc" && sortOrder !== "desc") {
             return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
@@ -127,13 +130,13 @@ export const getVideoComments = async (c: Context) => {
                 $addFields: {
                     likesCount: { $size: "$likes" },
                     isLiked: {
-                        $in: [new Types.ObjectId(user.id), "$likes.likedBy"],
+                        $in: [userId, "$likes.likedBy"],
                     },
                 },
             },
             {
                 $sort: {
-                    [sortType]: sortOrder === "asc" ? 1 : -1,
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
                 },
             },
             {
@@ -158,13 +161,14 @@ export const getVideoComments = async (c: Context) => {
 export const getTweetComments = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
-        const { sortType = "createdAt", sortOrder = "desc" } = c.req.query();
-        if (sortType !== "createdAt" && sortType !== "likesCount") {
-            return c.json({ error: "Invalid sort type it can only be (createdAt, likesCount)" }, 400);
+        const { sortBy = "createdAt", sortOrder = "desc" } = c.req.query();
+        if (sortBy !== "createdAt" && sortBy !== "likesCount") {
+            return c.json({ error: "Invalid sort by it can only be (createdAt, likesCount)" }, 400);
         }
         if (sortOrder !== "asc" && sortOrder !== "desc") {
             return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
@@ -212,13 +216,13 @@ export const getTweetComments = async (c: Context) => {
                 $addFields: {
                     likesCount: { $size: "$likes" },
                     isLiked: {
-                        $in: [new Types.ObjectId(user.id), "$likes.likedBy"],
+                        $in: [userId, "$likes.likedBy"],
                     },
                 },
             },
             {
                 $sort: {
-                    [sortType]: sortOrder === "asc" ? 1 : -1,
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
                 },
             },
             {
@@ -243,17 +247,18 @@ export const getTweetComments = async (c: Context) => {
 export const updateComment = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const commentId = c.req.param("commentId");
         if (!isValidObjectId(commentId)) {
             return c.json({ error: "Invalid comment ID" }, 400);
         }
         const data = await c.req.json();
-        const result = AddCommentSchema.safeParse(data);
+        const result = UpdateCommentSchema.safeParse(data);
         if (!result.success) {
             return c.json({ error: flattenError(result.error).fieldErrors }, 400);
         }
         const { content } = result.data;
-        const comment = await Comment.findOneAndUpdate({ _id: commentId, owner: user.id }, { content }, { new: true });
+        const comment = await Comment.findOneAndUpdate({ _id: commentId, owner: userId }, { content }, { new: true });
         if (!comment) {
             return c.json({ error: "Comment not found or not authorized" }, 404);
         }
@@ -267,11 +272,12 @@ export const updateComment = async (c: Context) => {
 export const deleteComment = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const commentId = c.req.param("commentId");
         if (!isValidObjectId(commentId)) {
             return c.json({ error: "Invalid comment ID" }, 400);
         }
-        const comment = await Comment.findOneAndDelete({ _id: commentId, owner: user.id });
+        const comment = await Comment.findOneAndDelete({ _id: commentId, owner: userId });
         if (!comment) {
             return c.json({ error: "Comment not found or not authorized" }, 404);
         }

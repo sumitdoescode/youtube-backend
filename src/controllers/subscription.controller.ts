@@ -1,13 +1,18 @@
 import type { Context } from "hono";
 import { Subscription } from "../models/subscription.model";
-import mongoose, { isValidObjectId, Types } from "mongoose";
+import { Types } from "mongoose";
+import { getDb } from "../lib/db";
 
 export const toggleSubscription = async (c: Context) => {
     try {
         const user = c.get("user");
         const username = c.req.param("username");
 
-        const db = mongoose.connection.db;
+        if (!username?.trim()) {
+            return c.json({ error: "Username is required" }, 400);
+        }
+
+        const db = getDb();
         if (!db) {
             throw new Error("Database connection is not initialized");
         }
@@ -17,6 +22,12 @@ export const toggleSubscription = async (c: Context) => {
         if (!channel) {
             return c.json({ error: `Channel not found with username : ${username}` }, 404);
         }
+
+        // you cannot subscribe to yourself
+        if (channel._id.toString() === user.id) {
+            return c.json({ error: "You cannot subscribe to yourself" }, 400);
+        }
+
         const subscriptionDeleted = await Subscription.findOneAndDelete({ subscriber: user.id, channel: channel._id });
         if (!subscriptionDeleted) {
             await Subscription.create({ subscriber: user.id, channel: channel._id });
@@ -36,7 +47,7 @@ export const getChannelSubscribersAndSubscribedToCount = async (c: Context) => {
             return c.json({ error: "Username is required" }, 400);
         }
 
-        const db = mongoose.connection.db;
+        const db = getDb();
         if (!db) {
             throw new Error("Database connection is not initialized");
         }
@@ -66,7 +77,7 @@ export const getChannelSubscribers = async (c: Context) => {
             return c.json({ error: "Username is required" }, 400);
         }
 
-        const db = mongoose.connection.db;
+        const db = getDb();
         if (!db) {
             throw new Error("Database connection is not initialized");
         }
@@ -144,7 +155,7 @@ export const getSubscribedChannels = async (c: Context) => {
             return c.json({ error: "Username is required" }, 400);
         }
 
-        const db = mongoose.connection.db;
+        const db = getDb();
         if (!db) {
             throw new Error("Database connection is not initialized");
         }

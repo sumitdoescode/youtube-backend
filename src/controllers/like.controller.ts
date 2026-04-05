@@ -8,19 +8,20 @@ import { Tweet } from "../models/tweet.model";
 export const toggleVideoLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        const videoId = c.req.param("videoId");
+        let videoId: any = c.req.param("videoId");
         if (!isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
         }
+        videoId = new Types.ObjectId(videoId);
 
         const video = await Video.exists({ _id: videoId });
         if (!video) {
             return c.json({ error: "Video not found" }, 404);
         }
 
-        const deletedLike = await Like.findOneAndDelete({ video: videoId, likedBy: user._id });
+        const deletedLike = await Like.findOneAndDelete({ video: videoId, likedBy: new Types.ObjectId(user.id) });
         if (!deletedLike) {
-            await Like.create({ video: videoId, likedBy: user._id });
+            await Like.create({ video: videoId, likedBy: new Types.ObjectId(user.id) });
             return c.json({ success: true, message: "Video liked successfully" }, 200);
         }
         return c.json({ success: true, message: "Video unliked successfully" }, 200);
@@ -32,19 +33,20 @@ export const toggleVideoLike = async (c: Context) => {
 export const toggleTweetLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        const tweetId = c.req.param("tweetId");
+        let tweetId: any = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
+        tweetId = new Types.ObjectId(tweetId);
 
         const tweet = await Tweet.exists({ _id: tweetId });
         if (!tweet) {
             return c.json({ error: "Tweet not found" }, 404);
         }
 
-        const deletedLike = await Like.findOneAndDelete({ tweet: tweetId, likedBy: user.id });
+        const deletedLike = await Like.findOneAndDelete({ tweet: tweetId, likedBy: new Types.ObjectId(user.id) });
         if (!deletedLike) {
-            await Like.create({ tweet: tweetId, likedBy: user.id });
+            await Like.create({ tweet: tweetId, likedBy: new Types.ObjectId(user.id) });
             return c.json({ success: true, message: "Tweet liked successfully" }, 200);
         }
 
@@ -57,19 +59,20 @@ export const toggleTweetLike = async (c: Context) => {
 export const toggleCommentLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        const commentId = c.req.param("commentId");
+        let commentId: any = c.req.param("commentId");
         if (!isValidObjectId(commentId)) {
             return c.json({ error: "Invalid comment ID" }, 400);
         }
+        commentId = new Types.ObjectId(commentId);
 
         const comment = await Comment.exists({ _id: commentId });
         if (!comment) {
             return c.json({ error: "Comment not found" }, 404);
         }
 
-        const deletedComment = await Like.findOneAndDelete({ comment: commentId, likedBy: user._id });
+        const deletedComment = await Like.findOneAndDelete({ comment: commentId, likedBy: new Types.ObjectId(user.id) });
         if (!deletedComment) {
-            await Like.create({ comment: commentId, likedBy: user._id });
+            await Like.create({ comment: commentId, likedBy: new Types.ObjectId(user.id) });
             return c.json({ success: true, message: "Comment liked successfully" }, 200);
         }
         return c.json({ success: true, message: "Comment unliked successfully" }, 200);
@@ -127,7 +130,7 @@ export const getLikedVideos = async (c: Context) => {
                                 thumbnail: 1,
                                 duration: 1,
                                 viewsCount: 1,
-                                isPublished: 1,
+                                visibility: 1,
                                 owner: 1,
                                 createdAt: 1,
                                 updatedAt: 1,

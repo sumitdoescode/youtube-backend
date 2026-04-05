@@ -1,4 +1,4 @@
-import mongoose, { connect, connection } from "mongoose";
+import mongoose, { connect } from "mongoose";
 
 const MONGODB_URL = process.env.MONGODB_URI as string;
 const DB_NAME = process.env.DB_NAME as string;
@@ -21,4 +21,4 @@ export async function connectDB() {
     }
 }
 
-export const db = mongoose.connection.db;
+export const getDb = () => mongoose.connection.db;

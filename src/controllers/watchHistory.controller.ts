@@ -58,11 +58,11 @@ export const getWatchHistory = async (c: Context) => {
                 },
             },
             {
-                $unwind: "$video",
+                $unwind: { path: "$video", preserveNullAndEmptyArrays: true },
             },
             {
                 $sort: {
-                    createdAt: -1,
+                    createdAt: sortOrder === "asc" ? 1 : -1,
                 },
             },
             {

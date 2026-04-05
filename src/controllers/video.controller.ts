@@ -164,31 +164,50 @@ export const uploadVideo = async (c: Context) => {
             return c.json({ error: flattenError(result.error).fieldErrors }, 400);
         }
 
-        const videoUpload = await uploadFileStream(video, {
-            resource_type: "video",
-            folder: "videos",
-        });
+        let videoUpload;
+        let thumbnailUpload;
 
-        const thumbnailUpload = await uploadFileStream(thumbnail, {
-            resource_type: "image",
-            folder: "thumbnails",
-        });
+        try {
+            videoUpload = await uploadFileStream(video, {
+                resource_type: "video",
+                folder: "videos",
+            });
 
-        const createdVideo = await Video.create({
-            title,
-            description,
-            video: {
-                url: videoUpload.secure_url,
-                publicId: videoUpload.public_id,
-            },
-            thumbnail: {
-                url: thumbnailUpload.secure_url,
-                publicId: thumbnailUpload.public_id,
-            },
-            duration: videoUpload.duration,
-            owner: user.id,
-        });
-        return c.json({ success: true, createdVideo }, 201);
+            thumbnailUpload = await uploadFileStream(thumbnail, {
+                resource_type: "image",
+                folder: "thumbnails",
+            });
+
+            const createdVideo = await Video.create({
+                title,
+                description,
+                video: {
+                    url: videoUpload.secure_url,
+                    publicId: videoUpload.public_id,
+                },
+                thumbnail: {
+                    url: thumbnailUpload.secure_url,
+                    publicId: thumbnailUpload.public_id,
+                },
+                duration: videoUpload.duration,
+                owner: user.id,
+            });
+
+            return c.json({ success: true, createdVideo }, 201);
+        } catch (error) {
+            if (thumbnailUpload?.public_id) {
+                await cloudinary.uploader.destroy(thumbnailUpload.public_id, {
+                    resource_type: "image",
+                });
+            }
+
+            if (videoUpload?.public_id) {
+                await cloudinary.uploader.destroy(videoUpload.public_id, {
+                    resource_type: "video",
+                });
+            }
+            throw error;
+        }
     } catch (error) {
         console.error("Error uploading video:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
@@ -274,11 +293,9 @@ export const getVideoById = async (c: Context) => {
         video[0].isSubscribed = Boolean(isSubscribed);
         video[0].viewsCount = updatedVideo?.viewsCount;
 
+        // if watch history is enabled then add the video to the watch history
         if (user.watchHistory) {
-            await WatchHistory.create({
-                video: videoId,
-                watchedBy: user.id,
-            });
+            await WatchHistory.updateOne({ video: videoId, watchedBy: user.id }, { $setOnInsert: { video: videoId, watchedBy: user.id } }, { upsert: true });
         }
 
         return c.json({ success: true, video: video[0] }, 200);
@@ -314,6 +331,7 @@ export const updateVideo = async (c: Context) => {
         }
 
         let oldThumbnailPublicId: string | null = null;
+        let newThumbnailPublicId: string | null = null;
 
         if (thumbnail) {
             oldThumbnailPublicId = video.thumbnail!.publicId;
@@ -328,13 +346,27 @@ export const updateVideo = async (c: Context) => {
                 url: thumbnailUpload.secure_url,
                 publicId: thumbnailUpload.public_id,
             };
+            newThumbnailPublicId = thumbnailUpload.public_id;
         }
 
         video.title = title || video.title;
         video.description = description || video.description;
 
-        // save in the database
-        await video.save();
+        try {
+            // save in the database
+            await video.save();
+        } catch (error) {
+            if (newThumbnailPublicId) {
+                try {
+                    await cloudinary.uploader.destroy(newThumbnailPublicId, {
+                        resource_type: "image",
+                    });
+                } catch (cleanupError) {
+                    console.error("Error deleting new thumbnail:", cleanupError);
+                }
+            }
+            throw error;
+        }
 
         // delete the old thumbnail from the cloudinary
         if (oldThumbnailPublicId) {
@@ -364,16 +396,27 @@ export const deleteVideo = async (c: Context) => {
             return c.json({ error: "Video not found or unauthorized" }, 404);
         }
 
-        // first remove the assets from the cloudinary
-        await cloudinary.uploader.destroy(video.video!.publicId, {
-            resource_type: "video",
-        });
-        await cloudinary.uploader.destroy(video.thumbnail!.publicId, {
-            resource_type: "image",
-        });
+        const videoPublicId = video.video!.publicId;
+        const thumbnailPublicId = video.thumbnail!.publicId;
 
-        // then only remove from the database
+        // remove from the database first
         await video.deleteOne();
+
+        try {
+            await cloudinary.uploader.destroy(videoPublicId, {
+                resource_type: "video",
+            });
+        } catch (cleanupError) {
+            console.error("Error deleting video asset:", cleanupError);
+        }
+
+        try {
+            await cloudinary.uploader.destroy(thumbnailPublicId, {
+                resource_type: "image",
+            });
+        } catch (cleanupError) {
+            console.error("Error deleting thumbnail asset:", cleanupError);
+        }
 
         return c.json({ success: true, message: "Video deleted successfully" }, 200);
     } catch (error) {

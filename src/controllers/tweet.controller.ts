@@ -2,9 +2,9 @@ import type { Context } from "hono";
 import { flattenError } from "zod";
 import { CreateTweetSchema, UpdateTweetSchema } from "../schemas/tweet.schema";
 import { Tweet } from "../models/tweet.model";
-import mongoose, { isValidObjectId } from "mongoose";
-import { Types } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import { Like } from "../models/like.model";
+import { getDb } from "../lib/db";
 
 export const createTweet = async (c: Context) => {
     try {
@@ -28,15 +28,26 @@ export const createTweet = async (c: Context) => {
 
 export const getTweetsByUsername = async (c: Context) => {
     try {
-        const user = c.get("user");
         const { sortOrder = "desc" } = c.req.query();
         if (sortOrder !== "asc" && sortOrder !== "desc") {
             return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
         }
+        const username = c.req.param("username");
+        if (!username) {
+            return c.json({ error: "Username is required" }, 400);
+        }
+        const db = getDb();
+        if (!db) {
+            return c.json({ error: "Database connection not found" }, 500);
+        }
+        const user = await db.collection("user").findOne({ username: username.toLowerCase().trim() });
+        if (!user) {
+            return c.json({ error: `User not found with username : ${username}` }, 404);
+        }
         const tweets = await Tweet.aggregate([
             {
                 $match: {
-                    owner: new Types.ObjectId(user.id),
+                    owner: new Types.ObjectId(user._id),
                 },
             },
             {

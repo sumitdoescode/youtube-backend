@@ -2,23 +2,23 @@ import type { Context } from "hono";
 import { Video } from "../models/video.model";
 import { Types } from "mongoose";
 import { Subscription } from "../models/subscription.model";
-import { Like } from "../models/like.model";
 import { Comment } from "../models/comment.model";
 import { Tweet } from "../models/tweet.model";
 
 export const getChannelStats = async (c: Context) => {
     try {
         const user = c.get("user");
-        const [subscribersCount, subscribedToCount, totalVideos, totalTweets, totalComments, videoStats] = await Promise.all([
-            Subscription.countDocuments({ channel: user.id }),
-            Subscription.countDocuments({ subscriber: user.id }),
-            Video.countDocuments({ owner: user.id }),
-            Tweet.countDocuments({ owner: user.id }),
-            Comment.countDocuments({ owner: user.id }),
+        const userId = new Types.ObjectId(user.id);
+
+        const [subscribersCount, subscribedToCount, totalVideos, totalTweets, videoStats] = await Promise.all([
+            Subscription.countDocuments({ channel: userId }),
+            Subscription.countDocuments({ subscriber: userId }),
+            Video.countDocuments({ owner: userId }),
+            Tweet.countDocuments({ owner: userId }),
             Video.aggregate([
                 {
                     $match: {
-                        owner: new Types.ObjectId(user.id),
+                        owner: userId,
                     },
                 },
                 {
@@ -61,9 +61,8 @@ export const getChannelStats = async (c: Context) => {
         const stats = {
             subscribersCount,
             subscribedToCount,
-            totalVideos, // total videos by me
-            totalTweets, // total tweets by me
-            totalComments, // total comments by me
+            totalVideos,
+            totalTweets,
             videoStats: videoStats[0] || { totalViews: 0, totalLikes: 0, totalComments: 0 },
         };
 
@@ -78,10 +77,23 @@ export const getChannelStats = async (c: Context) => {
 export const getChannelVideos = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
+        const { sortBy = "createdAt", sortOrder = "desc" } = c.req.query();
+        if (sortBy !== "createdAt" && sortBy !== "viewsCount" && sortBy !== "duration") {
+            return c.json({ error: "Invalid sort by" }, 400);
+        }
+        if (sortOrder !== "asc" && sortOrder !== "desc") {
+            return c.json({ error: "Invalid sort order" }, 400);
+        }
         const videos = await Video.aggregate([
             {
                 $match: {
-                    owner: new Types.ObjectId(user.id),
+                    owner: userId,
+                },
+            },
+            {
+                $sort: {
+                    [sortBy]: sortOrder === "desc" ? -1 : 1,
                 },
             },
             {
