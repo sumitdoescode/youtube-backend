@@ -5,6 +5,7 @@ import { Tweet } from "../models/tweet.model";
 import { isValidObjectId, Types } from "mongoose";
 import { Like } from "../models/like.model";
 import { getDb } from "../lib/db";
+import { deleteTweetWithCleanup } from "../services/tweet.service";
 
 export const createTweet = async (c: Context) => {
     try {
@@ -182,14 +183,16 @@ export const updateTweet = async (c: Context) => {
 export const deleteTweet = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
-        const tweet = await Tweet.findOneAndDelete({ _id: tweetId, owner: user.id });
+        const tweet = await Tweet.findOne({ _id: tweetId, owner: userId });
         if (!tweet) {
             return c.json({ error: "Tweet not found or unauthorized" }, 404);
         }
+        await deleteTweetWithCleanup(tweet._id);
         return c.json({ success: true, message: "Tweet deleted successfully" }, 200);
     } catch (error) {
         console.error("DELETE TWEET ERROR : ", error);

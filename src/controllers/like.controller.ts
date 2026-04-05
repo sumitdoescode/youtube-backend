@@ -8,11 +8,10 @@ import { Tweet } from "../models/tweet.model";
 export const toggleVideoLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        let videoId: any = c.req.param("videoId");
+        const videoId = c.req.param("videoId");
         if (!isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
         }
-        videoId = new Types.ObjectId(videoId);
 
         const video = await Video.exists({ _id: videoId });
         if (!video) {
@@ -33,11 +32,10 @@ export const toggleVideoLike = async (c: Context) => {
 export const toggleTweetLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        let tweetId: any = c.req.param("tweetId");
+        const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
-        tweetId = new Types.ObjectId(tweetId);
 
         const tweet = await Tweet.exists({ _id: tweetId });
         if (!tweet) {
@@ -59,11 +57,10 @@ export const toggleTweetLike = async (c: Context) => {
 export const toggleCommentLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        let commentId: any = c.req.param("commentId");
+        const commentId = c.req.param("commentId");
         if (!isValidObjectId(commentId)) {
             return c.json({ error: "Invalid comment ID" }, 400);
         }
-        commentId = new Types.ObjectId(commentId);
 
         const comment = await Comment.exists({ _id: commentId });
         if (!comment) {

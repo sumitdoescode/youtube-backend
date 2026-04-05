@@ -29,17 +29,18 @@ export const createPlaylist = async (c: Context) => {
 export const getPlaylistById = async (c: Context) => {
     try {
         const user = c.get("user");
-        let playlistId: any = c.req.param("playlistId");
+        const userId = new Types.ObjectId(user.id);
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
-        playlistId = new Types.ObjectId(playlistId);
+        const playlistObjectId = new Types.ObjectId(playlistId);
 
         const playlist = await Playlist.aggregate([
             {
                 $match: {
-                    _id: playlistId,
-                    $or: [{ owner: new Types.ObjectId(user.id) }, { visibility: "public" }],
+                    _id: playlistObjectId,
+                    $or: [{ owner: userId }, { visibility: "public" }],
                 },
             },
             {
@@ -51,7 +52,7 @@ export const getPlaylistById = async (c: Context) => {
                     pipeline: [
                         {
                             $match: {
-                                $or: [{ owner: new Types.ObjectId(user.id) }, { visibility: "public" }],
+                                $or: [{ owner: userId }, { visibility: "public" }],
                             },
                         },
                         {
@@ -121,11 +122,11 @@ export const getPlaylistById = async (c: Context) => {
 export const updatePlaylist = async (c: Context) => {
     try {
         const user = c.get("user");
-        let playlistId: any = c.req.param("playlistId");
+        const userId = new Types.ObjectId(user.id);
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
-        playlistId = new Types.ObjectId(playlistId);
         const data = await c.req.json();
         const result = updatePlaylistSchema.safeParse(data);
         if (!result.success) {
@@ -133,7 +134,7 @@ export const updatePlaylist = async (c: Context) => {
         }
         const { name, description } = result.data;
 
-        const playlist = await Playlist.findOneAndUpdate({ _id: playlistId, owner: new Types.ObjectId(user.id) }, { name, description }, { new: true });
+        const playlist = await Playlist.findOneAndUpdate({ _id: playlistId, owner: userId }, { name, description }, { new: true });
         if (!playlist) {
             return c.json({ error: "Playlist not found or you are not authorized to update it" }, 404);
         }
@@ -146,12 +147,12 @@ export const updatePlaylist = async (c: Context) => {
 export const deletePlaylist = async (c: Context) => {
     try {
         const user = c.get("user");
-        let playlistId: any = c.req.param("playlistId");
+        const userId = new Types.ObjectId(user.id);
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
-        playlistId = new Types.ObjectId(playlistId);
-        const playlist = await Playlist.findOneAndDelete({ _id: playlistId, owner: new Types.ObjectId(user.id) });
+        const playlist = await Playlist.findOneAndDelete({ _id: playlistId, owner: userId });
         if (!playlist) {
             return c.json({ error: "Playlist not found or you are not authorized to delete it" }, 404);
         }
@@ -164,6 +165,7 @@ export const deletePlaylist = async (c: Context) => {
 export const getPlaylistsByUsername = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const username = c.req.param("username");
         if (!username) {
             return c.json({ error: "Username is required" }, 400);
@@ -186,7 +188,7 @@ export const getPlaylistsByUsername = async (c: Context) => {
             {
                 $match: {
                     owner: new Types.ObjectId(targetUser._id),
-                    $or: [{ visibility: "public" }, { owner: new Types.ObjectId(user.id) }],
+                    $or: [{ visibility: "public" }, { owner: userId }],
                 },
             },
             {
@@ -245,32 +247,33 @@ export const getPlaylistsByUsername = async (c: Context) => {
 export const toggleVideoToPlaylist = async (c: Context) => {
     try {
         const user = c.get("user");
-        let playlistId: any = c.req.param("playlistId");
-        let videoId: any = c.req.param("videoId");
+        const userId = new Types.ObjectId(user.id);
+        const playlistId = c.req.param("playlistId");
+        const videoId = c.req.param("videoId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
         if (!isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
         }
-        playlistId = new Types.ObjectId(playlistId);
-        videoId = new Types.ObjectId(videoId);
+        const playlistObjectId = new Types.ObjectId(playlistId);
+        const videoObjectId = new Types.ObjectId(videoId);
         const video = await Video.findById(videoId);
         if (!video) {
             return c.json({ error: "Video not found" }, 404);
         }
 
-        const playlist = await Playlist.findOne({ _id: playlistId, owner: new Types.ObjectId(user.id) });
+        const playlist = await Playlist.findOne({ _id: playlistId, owner: userId });
         if (!playlist) {
             return c.json({ error: "Playlist not found or you are not authorized to add/remove video from it" }, 404);
         }
         // remove if already present, otherwise add it
-        if (playlist.videos.some((id) => id.toString() === videoId.toString())) {
-            const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, { $pull: { videos: videoId } }, { new: true });
+        if (playlist.videos.some((id) => id.toString() === videoObjectId.toString())) {
+            const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, { $pull: { videos: videoObjectId } }, { new: true });
             return c.json({ success: true, message: "Video removed from playlist successfully", updatedPlaylist }, 200);
         }
 
-        const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, { $push: { videos: videoId } }, { new: true });
+        const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, { $push: { videos: videoObjectId } }, { new: true });
         return c.json({ success: true, message: "Video added to playlist successfully", updatedPlaylist }, 200);
     } catch (error) {
         console.error("TOGGLE VIDEO TO PLAYLIST ERROR : ", error);
@@ -281,11 +284,12 @@ export const toggleVideoToPlaylist = async (c: Context) => {
 export const togglePlaylistVisibility = async (c: Context) => {
     try {
         const user = c.get("user");
+        const userId = new Types.ObjectId(user.id);
         const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
-        const playlist = await Playlist.findOne({ _id: new Types.ObjectId(playlistId), owner: new Types.ObjectId(user.id) }).select("_id visibility");
+        const playlist = await Playlist.findOne({ _id: playlistId, owner: userId }).select("_id visibility");
         if (!playlist) {
             return c.json({ error: "Playlist not found or you are not authorized to update it" }, 404);
         }

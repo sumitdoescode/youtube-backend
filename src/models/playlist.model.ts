@@ -28,4 +28,7 @@ const playlistSchema = new Schema(
     { timestamps: true },
 );
 
+playlistSchema.index({ owner: 1, createdAt: -1 });
+playlistSchema.index({ owner: 1 });
+
 export const Playlist = model("Playlist", playlistSchema);

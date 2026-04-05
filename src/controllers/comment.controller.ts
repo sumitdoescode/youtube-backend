@@ -5,6 +5,7 @@ import { isValidObjectId, Types } from "mongoose";
 import { Video } from "../models/video.model";
 import { Comment } from "../models/comment.model";
 import { Tweet } from "../models/tweet.model";
+import { deleteCommentWithCleanup } from "../services/comment.service";
 
 export const addCommentOnVideo = async (c: Context) => {
     try {
@@ -277,10 +278,13 @@ export const deleteComment = async (c: Context) => {
         if (!isValidObjectId(commentId)) {
             return c.json({ error: "Invalid comment ID" }, 400);
         }
-        const comment = await Comment.findOneAndDelete({ _id: commentId, owner: userId });
+        const comment = await Comment.findOne({ _id: commentId, owner: userId });
         if (!comment) {
             return c.json({ error: "Comment not found or not authorized" }, 404);
         }
+
+        await deleteCommentWithCleanup(comment._id);
+
         return c.json({ success: true, message: "Comment deleted successfully" }, 200);
     } catch (error) {
         console.error("DELETE COMMENT ERROR : ", error);

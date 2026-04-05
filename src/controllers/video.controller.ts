@@ -9,12 +9,15 @@ import { Like } from "../models/like.model";
 import { Subscription } from "../models/subscription.model";
 import { WatchHistory } from "../models/watchHistory.model";
 import { Comment } from "../models/comment.model";
+import { deleteVideoWithCleanup } from "../services/video.service";
 
 export const getAllVideos = async (c: Context) => {
     try {
-        const { query, sortBy = "viewsCount", sortOrder = "desc" } = c.req.query();
+        let { query, sortBy = "viewsCount", sortOrder = "desc" } = c.req.query();
+
+        // query is not required
         if (!query?.trim()) {
-            return c.json({ error: "Query is required" }, 400);
+            query = "";
         }
         if (sortBy !== "viewsCount" && sortBy !== "duration" && sortBy !== "createdAt") {
             return c.json({ error: "Invalid sort by it can only be (viewsCount, duration, createdAt)" }, 400);
@@ -93,7 +96,7 @@ export const getVideosByUsername = async (c: Context) => {
         }
         const targetUser = await db.collection("user").findOne({ username: username?.toLowerCase().trim() });
         if (!targetUser) {
-            return c.json({ error: "User not found with this username" }, 404);
+            return c.json({ error: `User not found with username ${username}` }, 404);
         }
         const videos = await Video.aggregate([
             {
@@ -266,7 +269,7 @@ export const getVideoById = async (c: Context) => {
         ]);
 
         if (!video.length) {
-            return c.json({ error: "Video not found" }, 404);
+            return c.json({ error: "Video not found or you are not authorized to watch this video" }, 404);
         }
 
         const [likesCount, isLiked, commentsCount, isSubscribed, subscribersCount, updatedVideo] = await Promise.all([
@@ -396,28 +399,7 @@ export const deleteVideo = async (c: Context) => {
             return c.json({ error: "Video not found or unauthorized" }, 404);
         }
 
-        const videoPublicId = video.video!.publicId;
-        const thumbnailPublicId = video.thumbnail!.publicId;
-
-        // remove from the database first
-        await video.deleteOne();
-
-        try {
-            await cloudinary.uploader.destroy(videoPublicId, {
-                resource_type: "video",
-            });
-        } catch (cleanupError) {
-            console.error("Error deleting video asset:", cleanupError);
-        }
-
-        try {
-            await cloudinary.uploader.destroy(thumbnailPublicId, {
-                resource_type: "image",
-            });
-        } catch (cleanupError) {
-            console.error("Error deleting thumbnail asset:", cleanupError);
-        }
-
+        await deleteVideoWithCleanup(video);
         return c.json({ success: true, message: "Video deleted successfully" }, 200);
     } catch (error) {
         console.error("Error deleting video:", error);
