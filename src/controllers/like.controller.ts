@@ -8,7 +8,7 @@ import { Tweet } from "../models/tweet.model";
 export const toggleVideoLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        const videoId = c.req.param("id");
+        const videoId = c.req.param("videoId");
         if (!isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
         }
@@ -32,7 +32,7 @@ export const toggleVideoLike = async (c: Context) => {
 export const toggleTweetLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        const tweetId = c.req.param("id");
+        const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
@@ -57,7 +57,7 @@ export const toggleTweetLike = async (c: Context) => {
 export const toggleCommentLike = async (c: Context) => {
     try {
         const user = c.get("user");
-        const commentId = c.req.param("id");
+        const commentId = c.req.param("commentId");
         if (!isValidObjectId(commentId)) {
             return c.json({ error: "Invalid comment ID" }, 400);
         }

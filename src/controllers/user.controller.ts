@@ -1,8 +1,7 @@
 import { auth } from "../lib/auth";
 import { Context } from "hono";
-import { RegisterUserSchema } from "../schemas/user.schema";
+import { RegisterUserSchema, LoginUserSchema } from "../schemas/user.schema";
 import { flattenError } from "zod";
-import { LoginUserSchema } from "../schemas/user.schema";
 import { put, del } from "@vercel/blob";
 import { CoverImageSchema, UserImageSchema } from "../schemas/image.schema";
 import mongoose from "mongoose";
@@ -117,17 +116,30 @@ export const setCoverImage = async (c: Context) => {
             addRandomSuffix: true,
         });
 
-        // updating the user's cover image
-        await auth.api.updateUser({
-            body: {
-                coverImage: url,
-            },
-            headers: c.req.raw.headers,
-        });
+        try {
+            // updating the user's cover image
+            await auth.api.updateUser({
+                body: {
+                    coverImage: url,
+                },
+                headers: c.req.raw.headers,
+            });
+        } catch (error) {
+            try {
+                await del(url);
+            } catch (deleteError) {
+                console.error("Error deleting new cover image:", deleteError);
+            }
+            throw error;
+        }
 
         // deleting the old cover image
         if (oldCoverImage) {
-            await del(oldCoverImage);
+            try {
+                await del(oldCoverImage);
+            } catch (error) {
+                console.error("Error deleting old cover image:", error);
+            }
         }
 
         return c.json({ success: true, coverImage: url }, 200);
@@ -155,40 +167,35 @@ export const setImage = async (c: Context) => {
             addRandomSuffix: true,
         });
 
-        // updating the user's image
-        await auth.api.updateUser({
-            body: {
-                image: url,
-            },
-            headers: c.req.raw.headers,
-        });
+        try {
+            // updating the user's image
+            await auth.api.updateUser({
+                body: {
+                    image: url,
+                },
+                headers: c.req.raw.headers,
+            });
+        } catch (error) {
+            try {
+                await del(url);
+            } catch (deleteError) {
+                console.error("Error deleting new image:", deleteError);
+            }
+            throw error;
+        }
 
         // deleting the old image
         if (oldImage) {
-            await del(oldImage);
+            try {
+                await del(oldImage);
+            } catch (error) {
+                console.error("Error deleting old image:", error);
+            }
         }
 
         return c.json({ success: true, image: url }, 200);
     } catch (error) {
         console.error("Error setting user image:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
-    }
-};
-
-export const toggleWatchHistory = async (c: Context) => {
-    try {
-        const user = c.get("user");
-        const watchHistory = user.watchHistory;
-
-        await auth.api.updateUser({
-            body: {
-                watchHistory: !watchHistory,
-            },
-            headers: c.req.raw.headers,
-        });
-        return c.json({ success: true, watchHistory: !watchHistory }, 200);
-    } catch (error) {
-        console.error("Error toggling watch history:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
     }
 };
@@ -203,9 +210,9 @@ export const getUserByUsername = async (c: Context) => {
         if (!db) {
             return c.json({ error: "Database connection not found" }, 500);
         }
-        const user = await db.collection("user").findOne({ username }, { projection: { _id: 1, name: 1, username: 1, image: 1, coverImage: 1, createdAt: 1, updatedAt: 1 } });
+        const user = await db.collection("user").findOne({ username: username.toLowerCase().trim() }, { projection: { _id: 1, name: 1, username: 1, image: 1, coverImage: 1, createdAt: 1, updatedAt: 1 } });
         if (!user) {
-            return c.json({ error: "User not found with username :", username }, 404);
+            return c.json({ error: `User not found with username : ${username}` }, 404);
         }
         return c.json({ success: true, user }, 200);
     } catch (error) {

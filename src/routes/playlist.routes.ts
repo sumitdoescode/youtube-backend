@@ -1,18 +1,17 @@
 import { Hono } from "hono";
 import { requireAuth } from "../middlewares/auth.middleware";
-import { createPlaylist, updatePlaylist, deletePlaylist, getUserPlaylists, getPlaylistById, addVideoToPlaylist, removeVideoFromPlaylist, updatePlaylistVideo } from "../controllers/playlist.controller";
+import { createPlaylist, updatePlaylist, deletePlaylist, getPlaylistsByUsername, getPlaylistById, toggleVideoToPlaylist, togglePlaylistVisibility } from "../controllers/playlist.controller";
 
 const router = new Hono();
 
 // prefix => api/playlists
 
 router.post("/", requireAuth, createPlaylist); // POST => /api/playlists
-router.get("/:id", requireAuth, getPlaylistById); // GET => /api/playlists/:id
-router.patch("/:id", requireAuth, updatePlaylist); // PATCH => /api/playlists/:id
-router.delete("/:id", requireAuth, deletePlaylist); // DELETE => /api/playlists/:id
-router.get("/user/:username", requireAuth, getUserPlaylists); // GET => /api/playlists/user/:username
-router.post("/:id/video", requireAuth, addVideoToPlaylist); // POST => /api/playlists/:id/video
-router.delete("/:id/video", requireAuth, removeVideoFromPlaylist); // DELETE => /api/playlists/:id/video
-router.patch("/:id/video", requireAuth, updatePlaylistVideo); // PATCH => /api/playlists/:id/video
+router.get("/users/:username", requireAuth, getPlaylistsByUsername); // GET => /api/playlists/users/:username
+router.get("/:playlistId", requireAuth, getPlaylistById); // GET => /api/playlists/:playlistId
+router.patch("/:playlistId/videos/:videoId", requireAuth, toggleVideoToPlaylist); // PATCH => /api/playlists/:playlistId/videos/:videoId
+router.patch("/:playlistId/visibility", requireAuth, togglePlaylistVisibility); // PATCH => /api/playlists/:playlistId/visibility
+router.patch("/:playlistId", requireAuth, updatePlaylist); // PATCH => /api/playlists/:playlistId
+router.delete("/:playlistId", requireAuth, deletePlaylist); // DELETE => /api/playlists/:playlistId
 
 export default router;

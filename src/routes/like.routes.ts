@@ -4,9 +4,10 @@ import { toggleVideoLike, toggleTweetLike, toggleCommentLike, getLikedVideos, ge
 
 const router = new Hono();
 
-router.post("/video/:id", requireAuth, toggleVideoLike); // POST => /api/likes/video/:id
-router.post("/comment/:id", requireAuth, toggleCommentLike); // POST => /api/likes/comment/:id
-router.post("/tweet/:id", requireAuth, toggleTweetLike); // POST => /api/likes/tweet/:id
+// prefix => /api/likes
+router.post("/videos/:videoId", requireAuth, toggleVideoLike); // POST => /api/likes/videos/:videoId
+router.post("/comments/:commentId", requireAuth, toggleCommentLike); // POST => /api/likes/comments/:commentId
+router.post("/tweets/:tweetId", requireAuth, toggleTweetLike); // POST => /api/likes/tweets/:tweetId
 router.get("/videos", requireAuth, getLikedVideos); // GET => /api/likes/videos
 router.get("/tweets", requireAuth, getLikedTweets); // GET => /api/likes/tweets
 router.get("/comments", requireAuth, getLikedComments); // GET => /api/likes/comments

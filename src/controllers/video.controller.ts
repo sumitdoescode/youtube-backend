@@ -198,7 +198,7 @@ export const uploadVideo = async (c: Context) => {
 export const getVideoById = async (c: Context) => {
     try {
         const user = c.get("user");
-        const videoId = c.req.param("id");
+        const videoId = c.req.param("videoId");
 
         if (!videoId || !isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
@@ -291,7 +291,7 @@ export const getVideoById = async (c: Context) => {
 export const updateVideo = async (c: Context) => {
     try {
         const user = c.get("user");
-        const videoId = c.req.param("id");
+        const videoId = c.req.param("videoId");
 
         if (!videoId || !isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
@@ -350,34 +350,10 @@ export const updateVideo = async (c: Context) => {
     }
 };
 
-export const toggleVideoVisibility = async (c: Context) => {
-    try {
-        const user = c.get("user");
-        const videoId = c.req.param("id");
-
-        if (!videoId || !isValidObjectId(videoId)) {
-            return c.json({ error: "Invalid video ID" }, 400);
-        }
-
-        const video = await Video.findOne({ _id: videoId, owner: new Types.ObjectId(user.id) });
-        if (!video) {
-            return c.json({ error: "Video not found or unauthorized" }, 404);
-        }
-
-        video.visibility = video.visibility === "public" ? "private" : "public";
-        await video.save();
-
-        return c.json({ success: true, visibility: video.visibility }, 200);
-    } catch (error) {
-        console.error("Error toggling video visibility:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
-    }
-};
-
 export const deleteVideo = async (c: Context) => {
     try {
         const user = c.get("user");
-        const videoId = c.req.param("id");
+        const videoId = c.req.param("videoId");
 
         if (!videoId || !isValidObjectId(videoId)) {
             return c.json({ error: "Invalid video ID" }, 400);
@@ -402,6 +378,30 @@ export const deleteVideo = async (c: Context) => {
         return c.json({ success: true, message: "Video deleted successfully" }, 200);
     } catch (error) {
         console.error("Error deleting video:", error);
+        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+    }
+};
+
+export const toggleVideoVisibility = async (c: Context) => {
+    try {
+        const user = c.get("user");
+        const videoId = c.req.param("videoId");
+
+        if (!videoId || !isValidObjectId(videoId)) {
+            return c.json({ error: "Invalid video ID" }, 400);
+        }
+
+        const video = await Video.findOne({ _id: videoId, owner: new Types.ObjectId(user.id) });
+        if (!video) {
+            return c.json({ error: "Video not found or unauthorized" }, 404);
+        }
+
+        video.visibility = video.visibility === "public" ? "private" : "public";
+        await video.save();
+
+        return c.json({ success: true, visibility: video.visibility }, 200);
+    } catch (error) {
+        console.error("Error toggling video visibility:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
     }
 };

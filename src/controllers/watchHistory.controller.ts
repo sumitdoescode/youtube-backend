@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { isValidObjectId, Types } from "mongoose";
 import { WatchHistory } from "../models/watchHistory.model";
+import { auth } from "../lib/auth";
 
 export const getWatchHistory = async (c: Context) => {
     try {
@@ -80,6 +81,24 @@ export const getWatchHistory = async (c: Context) => {
     }
 };
 
+export const toggleWatchHistory = async (c: Context) => {
+    try {
+        const user = c.get("user");
+        const watchHistory = user.watchHistory;
+
+        await auth.api.updateUser({
+            body: {
+                watchHistory: !watchHistory,
+            },
+            headers: c.req.raw.headers,
+        });
+        return c.json({ success: true, watchHistory: !watchHistory }, 200);
+    } catch (error) {
+        console.error("Error toggling watch history:", error);
+        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+    }
+};
+
 export const deleteAllWatchHistory = async (c: Context) => {
     try {
         const user = c.get("user");
@@ -94,7 +113,7 @@ export const deleteAllWatchHistory = async (c: Context) => {
 export const deleteWatchHistory = async (c: Context) => {
     try {
         const user = c.get("user");
-        const watchHistoryId = c.req.param("id");
+        const watchHistoryId = c.req.param("watchHistoryId");
         if (!isValidObjectId(watchHistoryId)) {
             return c.json({ error: "Invalid watch history ID" }, 400);
         }

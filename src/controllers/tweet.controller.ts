@@ -6,6 +6,26 @@ import mongoose, { isValidObjectId } from "mongoose";
 import { Types } from "mongoose";
 import { Like } from "../models/like.model";
 
+export const createTweet = async (c: Context) => {
+    try {
+        const user = c.get("user");
+        const data = await c.req.json();
+        const result = CreateTweetSchema.safeParse(data);
+        if (!result.success) {
+            return c.json({ error: flattenError(result.error).fieldErrors }, 400);
+        }
+        const { content } = result.data;
+        const tweet = await Tweet.create({
+            content,
+            owner: user.id,
+        });
+        return c.json({ success: true, message: "Tweet created successfully", tweet }, 201);
+    } catch (error) {
+        console.error("CREATE TWEET ERROR : ", error);
+        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+    }
+};
+
 export const getTweetsByUsername = async (c: Context) => {
     try {
         const user = c.get("user");
@@ -65,7 +85,7 @@ export const getTweetsByUsername = async (c: Context) => {
 export const getTweetById = async (c: Context) => {
     try {
         const user = c.get("user");
-        const tweetId = c.req.param("id");
+        const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
@@ -123,30 +143,10 @@ export const getTweetById = async (c: Context) => {
     }
 };
 
-export const createTweet = async (c: Context) => {
-    try {
-        const user = c.get("user");
-        const data = await c.req.json();
-        const result = CreateTweetSchema.safeParse(data);
-        if (!result.success) {
-            return c.json({ error: flattenError(result.error).fieldErrors }, 400);
-        }
-        const { content } = result.data;
-        const tweet = await Tweet.create({
-            content,
-            owner: user.id,
-        });
-        return c.json({ success: true, message: "Tweet created successfully", tweet }, 201);
-    } catch (error) {
-        console.error("CREATE TWEET ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
-    }
-};
-
 export const updateTweet = async (c: Context) => {
     try {
         const user = c.get("user");
-        const tweetId = c.req.param("id");
+        const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }
@@ -171,7 +171,7 @@ export const updateTweet = async (c: Context) => {
 export const deleteTweet = async (c: Context) => {
     try {
         const user = c.get("user");
-        const tweetId = c.req.param("id");
+        const tweetId = c.req.param("tweetId");
         if (!isValidObjectId(tweetId)) {
             return c.json({ error: "Invalid tweet ID" }, 400);
         }

@@ -1,9 +1,10 @@
 import type { Context } from "hono";
-import { Playlist } from "../models/playlist.model";
 import { isValidObjectId, Types } from "mongoose";
 import { createPlaylistSchema, updatePlaylistSchema } from "../schemas/playlist.schema";
 import { flattenError } from "zod";
 import { db } from "../lib/db";
+import { Playlist } from "../models/playlist.model";
+import { Video } from "../models/video.model";
 
 export const createPlaylist = async (c: Context) => {
     try {
@@ -29,7 +30,7 @@ export const createPlaylist = async (c: Context) => {
 export const getPlaylistById = async (c: Context) => {
     try {
         const user = c.get("user");
-        const playlistId = c.req.param("id");
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
@@ -120,7 +121,7 @@ export const getPlaylistById = async (c: Context) => {
 export const updatePlaylist = async (c: Context) => {
     try {
         const user = c.get("user");
-        const playlistId = c.req.param("id");
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
@@ -144,7 +145,7 @@ export const updatePlaylist = async (c: Context) => {
 export const deletePlaylist = async (c: Context) => {
     try {
         const user = c.get("user");
-        const playlistId = c.req.param("id");
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
@@ -183,25 +184,30 @@ export const getPlaylistsByUsername = async (c: Context) => {
                 },
             },
             {
+                $addFields: {
+                    videosCount: { $size: "$videos" },
+                    firstVideo: {
+                        $first: "$videos",
+                    },
+                },
+            },
+            {
                 $lookup: {
-                    from: "user",
-                    localField: "owner",
+                    from: "videos",
+                    localField: "firstVideo",
                     foreignField: "_id",
-                    as: "owner",
+                    as: "firstVideo",
                     pipeline: [
                         {
                             $project: {
-                                _id: 1,
-                                name: 1,
-                                username: 1,
-                                image: 1,
+                                "thumbnail.url": 1,
                             },
                         },
                     ],
                 },
             },
             {
-                $unwind: "$owner",
+                $unwind: "$firstVideo",
             },
             {
                 $sort: {
@@ -210,11 +216,12 @@ export const getPlaylistsByUsername = async (c: Context) => {
             },
             {
                 $project: {
+                    _id: 1,
                     name: 1,
                     description: 1,
                     visibility: 1,
-                    owner: 1,
-                    videosCount: { $size: "$videos" },
+                    videosCount: 1,
+                    firstVideo: 1,
                     createdAt: 1,
                     updatedAt: 1,
                 },
@@ -229,17 +236,32 @@ export const getPlaylistsByUsername = async (c: Context) => {
 export const toggleVideoToPlaylist = async (c: Context) => {
     try {
         const user = c.get("user");
-        const playlistId = c.req.param("id");
-        const { videoId } = await c.req.json();
-        if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
-            return c.json({ error: "Invalid playlist ID or video ID" }, 400);
+        const playlistId = new Types.ObjectId(c.req.param("playlistId"));
+        const videoId = new Types.ObjectId(c.req.param("videoId"));
+        if (!isValidObjectId(playlistId)) {
+            return c.json({ error: "Invalid playlist ID" }, 400);
         }
-        const playlist = await Playlist.findOneAndUpdate({ _id: playlistId, owner: user._id }, { $push: { videos: videoId } }, { new: true });
+        if (!isValidObjectId(videoId)) {
+            return c.json({ error: "Invalid video ID" }, 400);
+        }
+        const video = await Video.findById(videoId);
+        if (!video) {
+            return c.json({ error: "Video not found" }, 404);
+        }
+
+        const playlist = await Playlist.findOne({ _id: playlistId, owner: new Types.ObjectId(user.id) });
         if (!playlist) {
-            return c.json({ error: "Playlist not found" }, 404);
+            return c.json({ error: "Playlist not found or you are not authorized to add/remove video from it" }, 404);
         }
-        return c.json({ success: true, playlist }, 200);
+        // check if that video already exists in the playlist
+        if (playlist.videos.includes(videoId)) {
+            return c.json({ error: "Video already exists in the playlist" }, 400);
+        }
+        // you can add other's video's in your playlist too
+        const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, { $push: { videos: videoId } }, { new: true });
+        return c.json({ success: true, message: "Video added to playlist successfully", updatedPlaylist }, 200);
     } catch (error) {
+        console.error("TOGGLE VIDEO TO PLAYLIST ERROR : ", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
     }
 };
@@ -247,17 +269,24 @@ export const toggleVideoToPlaylist = async (c: Context) => {
 export const togglePlaylistVisibility = async (c: Context) => {
     try {
         const user = c.get("user");
-        const playlistId = c.req.param("id");
+        const playlistId = c.req.param("playlistId");
         if (!isValidObjectId(playlistId)) {
             return c.json({ error: "Invalid playlist ID" }, 400);
         }
-        const playlist = await Playlist.findOne({ _id: playlistId, owner: user._id });
+        const playlist = await Playlist.findOne({ _id: new Types.ObjectId(playlistId), owner: new Types.ObjectId(user.id) }).select("_id visibility");
         if (!playlist) {
-            return c.json({ error: "Playlist not found or not owned by you" }, 404);
+            return c.json({ error: "Playlist not found or you are not authorized to update it" }, 404);
         }
-        playlist.visibility = playlist.visibility === "public" ? "private" : "public";
-        await playlist.save();
-        return c.json({ success: true, playlist }, 200);
+        const updatedPlaylist = await Playlist.findByIdAndUpdate(
+            playlist._id,
+            {
+                $set: {
+                    visibility: playlist.visibility === "public" ? "private" : "public",
+                },
+            },
+            { new: true },
+        );
+        return c.json({ success: true, playlist: updatedPlaylist }, 200);
     } catch (error) {
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
     }
