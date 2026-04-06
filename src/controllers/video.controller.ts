@@ -13,7 +13,18 @@ import { deleteVideoWithCleanup } from "../services/video.service";
 
 export const getAllVideos = async (c: Context) => {
     try {
-        let { query, sortBy = "viewsCount", sortOrder = "desc" } = c.req.query();
+        let { query, sortBy = "viewsCount", sortOrder = "desc", page = 1, limit = 10 } = c.req.query();
+
+        page = Number(page) || 1;
+        limit = Number(limit) || 10;
+        if (page < 1) {
+            return c.json({ error: "Page must be greater than 0" }, 400);
+        }
+        if (limit < 1) {
+            return c.json({ error: "Limit must be greater than 0" }, 400);
+        }
+
+        const skip = (page - 1) * limit;
 
         // query is not required
         if (!query?.trim()) {
@@ -25,53 +36,65 @@ export const getAllVideos = async (c: Context) => {
         if (sortOrder !== "asc" && sortOrder !== "desc") {
             return c.json({ error: "Invalid sort order it can only be (asc, desc)" }, 400);
         }
-        const videos = await Video.aggregate([
-            {
-                $match: {
-                    title: { $regex: query, $options: "i" },
-                    visibility: "public",
+        const matchStage = {
+            title: { $regex: query, $options: "i" },
+            visibility: "public",
+        };
+
+        const [videos, total] = await Promise.all([
+            Video.aggregate([
+                {
+                    $match: matchStage,
                 },
-            },
-            {
-                $lookup: {
-                    from: "user",
-                    localField: "owner",
-                    foreignField: "_id",
-                    as: "owner",
-                    pipeline: [
-                        {
-                            $project: {
-                                _id: 1,
-                                name: 1,
-                                username: 1,
-                                image: 1,
+                {
+                    $lookup: {
+                        from: "user",
+                        localField: "owner",
+                        foreignField: "_id",
+                        as: "owner",
+                        pipeline: [
+                            {
+                                $project: {
+                                    _id: 1,
+                                    name: 1,
+                                    username: 1,
+                                    image: 1,
+                                },
                             },
-                        },
-                    ],
+                        ],
+                    },
                 },
-            },
-            {
-                $unwind: "$owner",
-            },
-            {
-                $sort: {
-                    [sortBy]: sortOrder === "asc" ? 1 : -1, // sortBy => viewsCount, duration, createdAt
+                {
+                    $unwind: "$owner",
                 },
-            },
-            {
-                $project: {
-                    _id: 1,
-                    title: 1,
-                    description: 1,
-                    "video.url": 1,
-                    "thumbnail.url": 1,
-                    duration: 1,
-                    viewsCount: 1,
-                    owner: 1,
+                {
+                    $sort: {
+                        [sortBy]: sortOrder === "asc" ? 1 : -1, // sortBy => viewsCount, duration, createdAt
+                    },
                 },
-            },
+                {
+                    $skip: skip,
+                },
+                {
+                    $limit: limit,
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        "video.url": 1,
+                        "thumbnail.url": 1,
+                        duration: 1,
+                        viewsCount: 1,
+                        owner: 1,
+                    },
+                },
+            ]),
+            Video.countDocuments(matchStage),
         ]);
-        return c.json({ success: true, videos }, 200);
+        const totalPages = Math.ceil(total / limit);
+        return c.json({ success: true, page, limit, total, totalPages, videos }, 200);
     } catch (error) {
         console.error("Error getting all videos:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
@@ -81,7 +104,18 @@ export const getAllVideos = async (c: Context) => {
 export const getVideosByUsername = async (c: Context) => {
     try {
         const username = c.req.param("username");
-        const { sortBy = "viewsCount", sortOrder = "desc" } = c.req.query();
+        let { sortBy = "viewsCount", sortOrder = "desc", page = 1, limit = 10 } = c.req.query();
+
+        page = Number(page) || 1;
+        limit = Number(limit) || 10;
+        if (page < 1) {
+            return c.json({ error: "Page must be greater than 0" }, 400);
+        }
+        if (limit < 1) {
+            return c.json({ error: "Limit must be greater than 0" }, 400);
+        }
+
+        const skip = (page - 1) * limit;
         if (sortBy !== "viewsCount" && sortBy !== "duration" && sortBy !== "createdAt") {
             return c.json({ error: "Invalid sort by it can only be (viewsCount, duration, createdAt)" }, 400);
         }
@@ -98,53 +132,66 @@ export const getVideosByUsername = async (c: Context) => {
         if (!targetUser) {
             return c.json({ error: `User not found with username ${username}` }, 404);
         }
-        const videos = await Video.aggregate([
-            {
-                $match: {
-                    owner: new Types.ObjectId(targetUser._id),
-                    visibility: "public",
+        const matchStage = {
+            owner: new Types.ObjectId(targetUser._id),
+            visibility: "public",
+        };
+
+        const [videos, total] = await Promise.all([
+            Video.aggregate([
+                {
+                    $match: matchStage,
                 },
-            },
-            {
-                $lookup: {
-                    from: "user",
-                    localField: "owner",
-                    foreignField: "_id",
-                    as: "owner",
-                    pipeline: [
-                        {
-                            $project: {
-                                _id: 1,
-                                name: 1,
-                                username: 1,
-                                image: 1,
+                {
+                    $lookup: {
+                        from: "user",
+                        localField: "owner",
+                        foreignField: "_id",
+                        as: "owner",
+                        pipeline: [
+                            {
+                                $project: {
+                                    _id: 1,
+                                    name: 1,
+                                    username: 1,
+                                    image: 1,
+                                },
                             },
-                        },
-                    ],
+                        ],
+                    },
                 },
-            },
-            {
-                $unwind: "$owner",
-            },
-            {
-                $sort: {
-                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                {
+                    $unwind: "$owner",
                 },
-            },
-            {
-                $project: {
-                    _id: 1,
-                    title: 1,
-                    description: 1,
-                    "video.url": 1,
-                    "thumbnail.url": 1,
-                    duration: 1,
-                    viewsCount: 1,
-                    owner: 1,
+                {
+                    $sort: {
+                        [sortBy]: sortOrder === "asc" ? 1 : -1,
+                    },
                 },
-            },
+                {
+                    $skip: skip,
+                },
+                {
+                    $limit: limit,
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        "video.url": 1,
+                        "thumbnail.url": 1,
+                        duration: 1,
+                        viewsCount: 1,
+                        owner: 1,
+                    },
+                },
+            ]),
+            Video.countDocuments(matchStage),
         ]);
-        return c.json({ success: true, videos }, 200);
+
+        const totalPages = Math.ceil(total / limit);
+        return c.json({ success: true, page, limit, total, totalPages, videos }, 200);
     } catch (error) {
         console.error("Error getting user videos:", error);
         return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);

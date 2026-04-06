@@ -14,9 +14,11 @@ import subscriptionRoutes from "./routes/subscription.routes";
 import healthRoutes from "./routes/health.routes";
 import { connectDB } from "./lib/db";
 import { setServers } from "node:dns";
+import { rateLimit } from "hono-rate-limiter";
 
 const app = new Hono();
 
+// cloudflare and google dns servers
 setServers(["1.1.1.1", "8.8.8.8"]);
 
 app.use(logger());
@@ -28,6 +30,14 @@ app.use(
         credentials: true,
     }),
 );
+
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again after 1 minute",
+});
+
+app.use(limiter);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw)); // better auth
 app.route("/api/users", userRoutes);
