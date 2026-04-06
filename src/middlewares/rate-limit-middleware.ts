@@ -6,6 +6,9 @@ export const globalRateLimiter = rateLimiter({
     keyGenerator: (c) => {
         const forwardedFor = c.req.header("x-forwarded-for");
         const realIp = c.req.header("x-real-ip");
-        return forwardedFor ?? realIp ?? "unknown";
+
+        const ip = forwardedFor?.split(",")[0]?.trim() || realIp?.trim();
+
+        return ip || c.req.raw.headers.get("host") || crypto.randomUUID();
     },
 });
