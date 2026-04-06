@@ -33,6 +33,9 @@ app.use(
 
 app.use(globalRateLimiter);
 
+app.get("/", (c) => {
+    return c.json({ message: "Welcome to the YouTube Backend" });
+});
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw)); // better auth
 app.route("/api/users", userRoutes);
 app.route("/api/videos", videoRoutes);
