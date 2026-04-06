@@ -199,15 +199,23 @@ export const uploadVideo = async (c: Context) => {
             return c.json({ success: true, createdVideo }, 201);
         } catch (error) {
             if (thumbnailUpload?.public_id) {
-                await cloudinary.uploader.destroy(thumbnailUpload.public_id, {
-                    resource_type: "image",
-                });
+                try {
+                    await cloudinary.uploader.destroy(thumbnailUpload.public_id, {
+                        resource_type: "image",
+                    });
+                } catch (cleanupError) {
+                    console.error("Error deleting uploaded thumbnail:", cleanupError);
+                }
             }
 
             if (videoUpload?.public_id) {
-                await cloudinary.uploader.destroy(videoUpload.public_id, {
-                    resource_type: "video",
-                });
+                try {
+                    await cloudinary.uploader.destroy(videoUpload.public_id, {
+                        resource_type: "video",
+                    });
+                } catch (cleanupError) {
+                    console.error("Error deleting uploaded video:", cleanupError);
+                }
             }
             throw error;
         }
@@ -373,9 +381,13 @@ export const updateVideo = async (c: Context) => {
 
         // delete the old thumbnail from the cloudinary
         if (oldThumbnailPublicId) {
-            await cloudinary.uploader.destroy(oldThumbnailPublicId, {
-                resource_type: "image",
-            });
+            try {
+                await cloudinary.uploader.destroy(oldThumbnailPublicId, {
+                    resource_type: "image",
+                });
+            } catch (cleanupError) {
+                console.error("Error deleting old thumbnail:", cleanupError);
+            }
         }
 
         return c.json({ success: true, video }, 200);
