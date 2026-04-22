@@ -1,4 +1,3 @@
-import { Video } from "../models/video.model";
 import { Comment } from "../models/comment.model";
 import { Like } from "../models/like.model";
 import { Playlist } from "../models/playlist.model";

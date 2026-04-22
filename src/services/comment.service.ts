@@ -8,7 +8,6 @@ export const deleteCommentWithCleanup = async (commentId: string | Types.ObjectI
         await Comment.deleteOne({ _id: commentId });
         return true;
     } catch (error) {
-        console.error("DELETE COMMENT WITH CLEANUP ERROR :", error);
         throw error;
     }
 };
