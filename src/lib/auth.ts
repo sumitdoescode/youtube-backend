@@ -1,4 +1,4 @@
-import { betterAuth, boolean } from "better-auth";
+import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { username } from "better-auth/plugins";
