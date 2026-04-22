@@ -76,8 +76,7 @@ export const getWatchHistory = async (c: Context) => {
         ]);
         return c.json({ success: true, watchHistory }, 200);
     } catch (error) {
-        console.error("GET WATCH HISTORY ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -94,8 +93,7 @@ export const toggleWatchHistory = async (c: Context) => {
         });
         return c.json({ success: true, watchHistory: !watchHistory }, 200);
     } catch (error) {
-        console.error("Error toggling watch history:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -105,8 +103,7 @@ export const deleteAllWatchHistory = async (c: Context) => {
         await WatchHistory.deleteMany({ watchedBy: user.id });
         return c.json({ success: true, message: "All Watch history deleted successfully" }, 200);
     } catch (error) {
-        console.error("DELETE ALL WATCH HISTORY ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -123,7 +120,6 @@ export const deleteWatchHistory = async (c: Context) => {
         }
         return c.json({ success: true, message: "Watch history deleted successfully" }, 200);
     } catch (error) {
-        console.error("DELETE WATCH HISTORY ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

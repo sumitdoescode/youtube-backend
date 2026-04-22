@@ -96,8 +96,7 @@ export const getAllVideos = async (c: Context) => {
         const totalPages = Math.ceil(total / limit);
         return c.json({ success: true, page, limit, total, totalPages, videos }, 200);
     } catch (error) {
-        console.error("Error getting all videos:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -193,8 +192,7 @@ export const getVideosByUsername = async (c: Context) => {
         const totalPages = Math.ceil(total / limit);
         return c.json({ success: true, page, limit, total, totalPages, videos }, 200);
     } catch (error) {
-        console.error("Error getting user videos:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -267,8 +265,7 @@ export const uploadVideo = async (c: Context) => {
             throw error;
         }
     } catch (error) {
-        console.error("Error uploading video:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -358,8 +355,7 @@ export const getVideoById = async (c: Context) => {
 
         return c.json({ success: true, video: video[0] }, 200);
     } catch (error) {
-        console.error("Error getting video by ID:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -439,8 +435,7 @@ export const updateVideo = async (c: Context) => {
 
         return c.json({ success: true, video }, 200);
     } catch (error) {
-        console.error("Error updating video:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -461,8 +456,7 @@ export const deleteVideo = async (c: Context) => {
         await deleteVideoWithCleanup(video);
         return c.json({ success: true, message: "Video deleted successfully" }, 200);
     } catch (error) {
-        console.error("Error deleting video:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -485,7 +479,6 @@ export const toggleVideoVisibility = async (c: Context) => {
 
         return c.json({ success: true, visibility: video.visibility }, 200);
     } catch (error) {
-        console.error("Error toggling video visibility:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

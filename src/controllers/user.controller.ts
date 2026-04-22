@@ -1,5 +1,5 @@
 import { auth } from "../lib/auth";
-import { Context } from "hono";
+import { type Context } from "hono";
 import { RegisterUserSchema, LoginUserSchema } from "../schemas/user.schema";
 import { flattenError } from "zod";
 import { put, del } from "@vercel/blob";
@@ -29,8 +29,7 @@ export const register = async (c: Context) => {
             return c.json({ error: error instanceof Error ? error.message : "Error while registering user" }, 400);
         }
     } catch (error) {
-        console.error("Error registering user:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -71,8 +70,7 @@ export const login = async (c: Context) => {
             }
         }
     } catch (error) {
-        console.error("Error logging in user:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -83,8 +81,7 @@ export const logout = async (c: Context) => {
             asResponse: true,
         });
     } catch (error) {
-        console.error("Error logging out user:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -93,8 +90,7 @@ export const me = async (c: Context) => {
     try {
         return c.json({ success: true, user }, 200);
     } catch (error) {
-        console.error("Error getting current user:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -144,8 +140,7 @@ export const setCoverImage = async (c: Context) => {
 
         return c.json({ success: true, coverImage: url }, 200);
     } catch (error) {
-        console.error("Error setting cover image:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -195,8 +190,7 @@ export const setImage = async (c: Context) => {
 
         return c.json({ success: true, image: url }, 200);
     } catch (error) {
-        console.error("Error setting user image:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -216,7 +210,6 @@ export const getUserByUsername = async (c: Context) => {
         }
         return c.json({ success: true, user }, 200);
     } catch (error) {
-        console.error("Error getting user by username:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
