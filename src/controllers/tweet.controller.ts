@@ -22,8 +22,7 @@ export const createTweet = async (c: Context) => {
         });
         return c.json({ success: true, message: "Tweet created successfully", tweet }, 201);
     } catch (error) {
-        console.error("CREATE TWEET ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -89,8 +88,7 @@ export const getTweetsByUsername = async (c: Context) => {
         ]);
         return c.json({ success: true, tweets });
     } catch (error) {
-        console.error("GET ALL TWEETS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -150,8 +148,7 @@ export const getTweetById = async (c: Context) => {
 
         return c.json({ success: true, tweet: tweet[0] });
     } catch (error) {
-        console.error("GET TWEET BY ID ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -175,8 +172,7 @@ export const updateTweet = async (c: Context) => {
         }
         return c.json({ success: true, message: "Tweet updated successfully", tweet }, 200);
     } catch (error) {
-        console.error("UPDATE TWEET ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -195,7 +191,6 @@ export const deleteTweet = async (c: Context) => {
         await deleteTweetWithCleanup(tweet._id);
         return c.json({ success: true, message: "Tweet deleted successfully" }, 200);
     } catch (error) {
-        console.error("DELETE TWEET ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

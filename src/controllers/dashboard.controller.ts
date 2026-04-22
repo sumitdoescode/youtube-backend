@@ -68,8 +68,7 @@ export const getChannelStats = async (c: Context) => {
 
         return c.json({ success: true, stats }, 200);
     } catch (error) {
-        console.error("GET CHANNEL STATS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -113,7 +112,6 @@ export const getChannelVideos = async (c: Context) => {
         ]);
         return c.json({ success: true, videos }, 200);
     } catch (error) {
-        console.error("GET CHANNEL VIDEOS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

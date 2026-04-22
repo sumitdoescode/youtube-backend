@@ -35,8 +35,7 @@ export const toggleSubscription = async (c: Context) => {
         }
         return c.json({ success: true, message: "Channel unsubscribed successfully" }, 200);
     } catch (error) {
-        console.error("TOGGLE SUBSCRIPTION ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -63,8 +62,7 @@ export const getChannelSubscribersAndSubscribedToCount = async (c: Context) => {
         };
         return c.json({ success: true, message: "Counts fetched successfully", count }, 200);
     } catch (error) {
-        console.error("GET CHANNEL SUBSCRIBERS AND SUBSCRIBED TO COUNT ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -141,8 +139,7 @@ export const getChannelSubscribers = async (c: Context) => {
 
         return c.json({ success: true, subscribers: enrichedSubscribers }, 200);
     } catch (error) {
-        console.error("GET CHANNEL SUBSCRIBERS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -219,7 +216,6 @@ export const getSubscribedChannels = async (c: Context) => {
 
         return c.json({ success: true, subscribedChannels: enrichedSubscribedChannels }, 200);
     } catch (error) {
-        console.error("GET SUBSCRIBED CHANNELS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

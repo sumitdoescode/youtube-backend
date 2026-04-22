@@ -22,7 +22,7 @@ export const createPlaylist = async (c: Context) => {
         });
         return c.json({ success: true, playlist }, 201);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -115,7 +115,7 @@ export const getPlaylistById = async (c: Context) => {
 
         return c.json({ success: true, playlist: playlist[0] }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -140,7 +140,7 @@ export const updatePlaylist = async (c: Context) => {
         }
         return c.json({ success: true, playlist }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -158,7 +158,7 @@ export const deletePlaylist = async (c: Context) => {
         }
         return c.json({ success: true, message: "Playlist deleted successfully" }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -240,7 +240,7 @@ export const getPlaylistsByUsername = async (c: Context) => {
         ]);
         return c.json({ success: true, playlists }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -276,8 +276,7 @@ export const toggleVideoToPlaylist = async (c: Context) => {
         const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId, { $push: { videos: videoObjectId } }, { new: true });
         return c.json({ success: true, message: "Video added to playlist successfully", updatedPlaylist }, 200);
     } catch (error) {
-        console.error("TOGGLE VIDEO TO PLAYLIST ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -304,6 +303,6 @@ export const togglePlaylistVisibility = async (c: Context) => {
         );
         return c.json({ success: true, playlist: updatedPlaylist }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

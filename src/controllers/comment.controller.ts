@@ -35,8 +35,7 @@ export const addCommentOnVideo = async (c: Context) => {
         });
         return c.json({ success: true, message: "Comment added successfully", comment }, 201);
     } catch (error) {
-        console.error("ADD COMMENT ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -68,8 +67,7 @@ export const addCommentOnTweet = async (c: Context) => {
         });
         return c.json({ success: true, message: "Comment added successfully", comment }, 201);
     } catch (error) {
-        console.error("ADD COMMENT ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -154,8 +152,7 @@ export const getVideoComments = async (c: Context) => {
         ]);
         return c.json({ success: true, comments }, 200);
     } catch (error) {
-        console.error("GET COMMENTS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -240,8 +237,7 @@ export const getTweetComments = async (c: Context) => {
         ]);
         return c.json({ success: true, comments }, 200);
     } catch (error) {
-        console.error("GET COMMENTS ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -265,8 +261,7 @@ export const updateComment = async (c: Context) => {
         }
         return c.json({ success: true, message: "Comment updated successfully", comment }, 200);
     } catch (error) {
-        console.error("UPDATE COMMENT ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -287,7 +282,6 @@ export const deleteComment = async (c: Context) => {
 
         return c.json({ success: true, message: "Comment deleted successfully" }, 200);
     } catch (error) {
-        console.error("DELETE COMMENT ERROR : ", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

@@ -25,7 +25,7 @@ export const toggleVideoLike = async (c: Context) => {
         }
         return c.json({ success: true, message: "Video unliked successfully" }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -50,7 +50,7 @@ export const toggleTweetLike = async (c: Context) => {
 
         return c.json({ success: true, message: "Tweet unliked successfully" }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -74,7 +74,7 @@ export const toggleCommentLike = async (c: Context) => {
         }
         return c.json({ success: true, message: "Comment unliked successfully" }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -154,7 +154,7 @@ export const getLikedVideos = async (c: Context) => {
 
         return c.json({ success: true, likedVideos }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -230,7 +230,7 @@ export const getLikedTweets = async (c: Context) => {
 
         return c.json({ success: true, likedTweets }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
 
@@ -305,6 +305,6 @@ export const getLikedComments = async (c: Context) => {
 
         return c.json({ success: true, likedComments }, 200);
     } catch (error) {
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };
