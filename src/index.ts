@@ -52,9 +52,10 @@ app.notFound((c) => {
     return c.json({ error: "Route not found" }, 404);
 });
 
-app.onError((err, c) => {
-    console.error(`${err}`);
-    return c.json({ error: err instanceof Error ? err.message : "Internal Server Error" }, 500);
+app.onError((error, c) => {
+    console.error("ERROR: ", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+    return c.json({ error: errorMessage }, 500);
 });
 
 connectDB();
