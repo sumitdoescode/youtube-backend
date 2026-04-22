@@ -1,5 +1,5 @@
-import { Context, Next } from "hono";
 import { auth } from "../lib/auth";
+import type { Context, Next } from "hono";
 
 export const requireAuth = async (c: Context, next: Next) => {
     try {
@@ -12,7 +12,6 @@ export const requireAuth = async (c: Context, next: Next) => {
         c.set("user", session.user);
         await next();
     } catch (error) {
-        console.error("Error in requireAuth middleware:", error);
-        return c.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
+        throw error;
     }
 };

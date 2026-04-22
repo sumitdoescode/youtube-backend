@@ -79,10 +79,10 @@ export const getChannelVideos = async (c: Context) => {
         const userId = new Types.ObjectId(user.id);
         const { sortBy = "createdAt", sortOrder = "desc" } = c.req.query();
         if (sortBy !== "createdAt" && sortBy !== "viewsCount" && sortBy !== "duration") {
-            return c.json({ error: "Invalid sort by" }, 400);
+            return c.json({ error: "Invalid sort by it can only be createdAt, viewsCount, duration or title" }, 400);
         }
         if (sortOrder !== "asc" && sortOrder !== "desc") {
-            return c.json({ error: "Invalid sort order" }, 400);
+            return c.json({ error: "Invalid sort order it can only be asc or desc" }, 400);
         }
         const videos = await Video.aggregate([
             {
